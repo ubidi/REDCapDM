@@ -7,7 +7,7 @@
 redcap_data(data_path = NA, dic_path = NA, uri = NA, token = NA)
 }
 \arguments{
-\item{data_path}{Connection or character string giving the URL or pathname of the file to read the dataset from. In case of `API = TRUE` this argument indicates the URL of the REDCap API.}
+\item{data_path}{Character string with the pathname of the R file to read the dataset from.}
 
 \item{dic_path}{Character string with the pathname of the dictionary.}
 
@@ -28,7 +28,3 @@ If you will give further use to the package, we advise you to use the argument '
 \note{
 To read exported data you have to first use REDCap's 'Export Data' function and select the format 'R Statistical Software', then it will generate one CSV file with all observations and an R file with the necessary code to complete each variable information.
 }
-\keyword{API}
-\keyword{REDCap,}
-\keyword{dataset,}
-\keyword{dictionary,}

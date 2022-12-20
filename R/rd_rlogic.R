@@ -4,8 +4,10 @@
 #'
 #' @param logic String containing a logic in REDCap format.
 #' @param data R object corresponding to the dataset.
-#' @keywords redcap, branching logic
 #' @return String containing the logic in R format.
+#' @examples
+#' rd_rlogic(logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)",
+#'           data = covican$data)
 #' @export
 
 rd_rlogic <- function(logic, data){

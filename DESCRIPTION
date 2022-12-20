@@ -11,10 +11,9 @@ Authors@R: c(
     person("Cristian", "Tebé", role = c("aut"))
     )
 Maintainer: João Carmezim <ubidi@idibell.cat>
-Description: Access and manage 'REDCap' data. 'REDCap' (Research Electronic Data CAPture; <https://projectredcap.org>) is a web application for building and managing online surveys and databases developed at Vanderbilt University. The API allows users to access data and project meta data (such as the data dictionary) from the web programmatically. This package allows us to read 'REDCap' data, exported or using an API connection, identify missing or extreme values, identify missing REDCap events in each observation, do a follow-up of the queries initially identified and it also facilitates the process of data management.
+Description: Access and manage 'REDCap' data. 'REDCap' (Research Electronic Data CAPture; <https://projectredcap.org>) is a web application for building and managing online surveys and databases developed at Vanderbilt University. The API allows users to programmatic access data and project meta data (such as the data dictionary) from the web. This package allows us to read 'REDCap' data, exported or using an API connection, identify missing or extreme values, identify missing REDCap events in each observation, do a follow-up of the queries initially identified and it also facilitates the process of data management.
 License: MIT + file LICENSE
 Encoding: UTF-8
-Roxigen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports: 
     dplyr,
@@ -28,10 +27,11 @@ Imports:
     purrr,
     tidyselect,
     tibble,
-    rlang
+    rlang	
 Suggests: 
     knitr,
-    rmarkdown
+    rmarkdown,
+    kableExtra
 VignetteBuilder: knitr
 Depends: 
     R (>= 2.10)

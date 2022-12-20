@@ -47,5 +47,13 @@ List with the transformed dataset and dictionary.
 \description{
 Function that transforms the raw data from REDCap read by the function `redcap_data`. It returns both the transformed data and dictionary.
 }
-\keyword{REDCap,}
-\keyword{preprocessing}
+\examples{
+rd_transform(data = covican$data,
+             dic = covican$dictionary)
+
+# For customization of checkbox labels
+rd_transform(data = covican$data,
+             dic = covican$dictionary,
+             checkbox_labels = c("Not present", "Present"))
+
+}

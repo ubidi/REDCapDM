@@ -7,20 +7,20 @@
 #'
 #' If you will give further use to the package, we advise you to use the argument 'dic_path' to read your dictionary, since all other functions need it in order to run properly.
 #'
-#' @param data_path Connection or character string giving the URL or pathname of the file to read the dataset from. In case of `API = TRUE` this argument indicates the URL of the REDCap API.
+#' @param data_path Character string with the pathname of the R file to read the dataset from.
 #' @param dic_path Character string with the pathname of the dictionary.
 #' @param uri The URI (uniform resource identifier) of the REDCap project.
 #' @param token Character vector with the code of the token.
-#' @keywords REDCap, dataset, dictionary, API
 #' @return List with the dataset and the dictionary of the corresponding REDCap project.
 #'
 #' @note To read exported data you have to first use REDCap's 'Export Data' function and select the format 'R Statistical Software', then it will generate one CSV file with all observations and an R file with the necessary code to complete each variable information.
+#'
 #' @export
 
 redcap_data<-function(data_path = NA, dic_path = NA, uri = NA, token = NA)
   {
   if(all(!c(data_path, dic_path)%in%NA)&any(!c(token,uri)%in%NA)){
-    stop("Too many arguments, if you want to read exported data from REDCap use only the arguments data_path, dic_path and encoding.", call. = FALSE)
+    stop("Too many arguments, if you want to read exported data from REDCap use only the arguments data_path and dic_path", call. = FALSE)
   }
   if(all(!c(token, uri)%in%NA)&any(!c(data_path,dic_path)%in%NA)){
     stop("Too many arguments, if you want to read data from REDCap through an API connection use only the arguments uri and token.", call. = FALSE)

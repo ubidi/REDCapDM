@@ -17,8 +17,32 @@
 #' @param silent Logical. If `TRUE`, it does not return a report with the number of queries by variable.
 #' @param report_title Character string with the report's title.
 #' @param report_zeros Logical. If `TRUE`, it returns a report including variables with zero queries.
-#' @keywords queries, missing values, abnormal values, branching logic
 #' @return A data frame with 9 columns meant to help the user identify each query.
+#' @examples
+#' # Missings
+#' example <- rd_query(variables = c("copd", "age"),
+#'                     expression = c("%in%NA", "%in%NA"),
+#'                     event = "initial_visit_arm_1",
+#'                     dic = covican$dictionary,
+#'                     data = covican$data)
+#' example
+#'
+#' # Expression
+#' example <- rd_query(variables="age",
+#'                     expression=">20",
+#'                     event="initial_visit_arm_1",
+#'                     dic=covican$dictionary,
+#'                     data=covican$data)
+#' example
+#'
+#' # Using a filter
+#' example <- rd_query(variables = "potassium",
+#'                     expression = "%in%NA",
+#'                     event = "initial_visit_arm_1",
+#'                     dic = covican$dictionary,
+#'                     data = covican$data,
+#'                     filter = "analitica_disponible=='1'")
+#' example
 #' @export
 
 rd_query <- function(variables = NA, expression = NA, negate = FALSE, variables_names = NA, query_name = NA, instrument = NA, event = NA, dic, data, filter = NA, addTo = NA, silent = FALSE, report_title = NA, report_zeros = FALSE)

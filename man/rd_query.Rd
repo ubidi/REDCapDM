@@ -57,9 +57,29 @@ A data frame with 9 columns meant to help the user identify each query.
 This function allows you to identify queries using a determined expression.
 It can be used to identify missing values, values outside the lower or upper limit of a variable and even identify missing values of variables that present a branching logic through the use of the filter argument.
 }
-\keyword{abnormal}
-\keyword{branching}
-\keyword{logic}
-\keyword{missing}
-\keyword{queries,}
-\keyword{values,}
+\examples{
+# Missings
+example <- rd_query(variables = c("copd", "age"),
+                    expression = c("\%in\%NA", "\%in\%NA"),
+                    event = "initial_visit_arm_1",
+                    dic = covican$dictionary,
+                    data = covican$data)
+example
+
+# Expression
+example <- rd_query(variables="age",
+                    expression=">20",
+                    event="initial_visit_arm_1",
+                    dic=covican$dictionary,
+                    data=covican$data)
+example
+
+# Using a filter
+example <- rd_query(variables = "potassium",
+                    expression = "\%in\%NA",
+                    event = "initial_visit_arm_1",
+                    dic = covican$dictionary,
+                    data = covican$data,
+                    filter = "analitica_disponible=='1'")
+example
+}

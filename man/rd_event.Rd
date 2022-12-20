@@ -42,5 +42,9 @@ A dataframe with 9 columns meant to help the user identify each missing event.
 By default, if a record identifier has no information of a designated event, REDCap will not download it.
 This function allows you to point out which record identifiers do not have information of a determined event.
 }
-\keyword{events,}
-\keyword{missings}
+\examples{
+example <- rd_event(event = "follow_up_visit_da_arm_1",
+                    dic = covican$dictionary,
+                    data = covican$data)
+example
+}

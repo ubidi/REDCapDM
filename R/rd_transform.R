@@ -13,8 +13,17 @@
 #' @param which_event Character string indicating if only one event has to be returned if the final format selected is `by_event`.
 #' @param which_form Character string indicating if only one form has to be returned if the final format selected is `by_form`.
 #' @param wide Logical indicating if the data split by form (if selected) has to be in a wide format or in a long one.
-#' @keywords REDCap, preprocessing
 #' @return List with the transformed dataset and dictionary.
+#'
+#' @examples
+#' rd_transform(data = covican$data,
+#'              dic = covican$dictionary)
+#'
+#' # For customization of checkbox labels
+#' rd_transform(data = covican$data,
+#'              dic = covican$dictionary,
+#'              checkbox_labels = c("Not present", "Present"))
+#'
 #' @export
 
 rd_transform <- function(data, dic, event_path = NULL, checkbox_labels = c("No", "Yes"), exclude_to_factor = NULL, keep_labels = FALSE, delete_vars = "_complete", final_format = "raw", which_event = NULL, which_form = NULL, wide = NULL){

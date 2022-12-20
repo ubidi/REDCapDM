@@ -3,8 +3,18 @@
 #' This function compares a former dataset of queries with a new one and allows you to check which of the old queries were resolved, which are yet to be resolved and which of them are new.
 #' @param old Old version of the dataset of queries.
 #' @param new New version of the dataset of queries. This object will be used to determine the status of each query.
-#' @keywords check, queries
 #' @return A data frame with a merge of all queries plus a column indicating which queries were resolved or are new comparing to the old queries dataset.
+#' @examples
+#' data_old <- rd_query(variables = "copd",
+#'                      expression = "%in%NA",
+#'                      event = "initial_visit_arm_1",
+#'                      dic = covican$dictionary,
+#'                      data = covican$data)
+#' data_new <- rbind(data_old[1:5,], c("100-20",rep("abc",8)))
+#'
+#' # Control of queries
+#' check <- check_queries(old = data_old,
+#'                        new = data_new)
 #' @export
 
 check_queries <-function(old, new)

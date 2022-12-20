@@ -19,6 +19,11 @@ transformed data with the specified variables converted.
 \description{
 Function that allows you to manually input a missing to some variables (`vars`) when some filters (`filter`) are satisfied. Useful for checkboxes without a gatekeeper question in the branching logic. Advert that the variables present in the filter have to be in the same event as the variables we want to convert.
 }
-\keyword{REDCap,}
-\keyword{checkbox,}
-\keyword{missing}
+\examples{
+data <- rd_transform(data = covican$data,
+                     dic = covican$dictionary)$data
+
+rd_insert_na(data = data,
+             filter = rep("age < 65", 2),
+             vars = grep("type_underlying_disease", names(data), value = TRUE))
+}

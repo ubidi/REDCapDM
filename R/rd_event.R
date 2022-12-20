@@ -12,8 +12,12 @@
 #' @param silent Logical. If `TRUE`, it does not return a report with the number of queries by event.
 #' @param report_title Character string with the report's title.
 #' @param report_zeros Logical. If `TRUE`, it returns a report including events with zero queries.
-#' @keywords events, missings
 #' @return A dataframe with 9 columns meant to help the user identify each missing event.
+#' @examples
+#' example <- rd_event(event = "follow_up_visit_da_arm_1",
+#'                     dic = covican$dictionary,
+#'                     data = covican$data)
+#' example
 #' @export
 
 rd_event <- function(event, filter = NA, query_name = NA, dic, data, addTo = NA, silent = FALSE, report_title = NA, report_zeros = FALSE)

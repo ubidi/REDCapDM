@@ -17,6 +17,7 @@ String containing the logic in R format.
 \description{
 This function allows you to transcribe REDCap logic to R logic. WARNING: If the REDCap logic has smart-variables this function will not be able to transform it.
 }
-\keyword{branching}
-\keyword{logic}
-\keyword{redcap,}
+\examples{
+rd_rlogic(logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)",
+          data = covican$data)
+}

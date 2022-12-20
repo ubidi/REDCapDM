@@ -4,8 +4,14 @@
 #' @param data Database containing data from REDCap.
 #' @param filter Character vector containing the logic to be directly evaluated.
 #' @param vars Character vector containing the names of those variables to transform. When the previous evaluated logic is `TRUE` the variables in the same event will be transformed to missing. So, remember that the variables in the filter have to be in the same event as the othe variables.
-#' @keywords REDCap, checkbox, missing
 #' @return transformed data with the specified variables converted.
+#' @examples
+#' data <- rd_transform(data = covican$data,
+#'                      dic = covican$dictionary)$data
+#'
+#' rd_insert_na(data = data,
+#'              filter = rep("age < 65", 2),
+#'              vars = grep("type_underlying_disease", names(data), value = TRUE))
 #' @export
 
 
