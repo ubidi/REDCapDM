@@ -1,12 +1,13 @@
 ---
-title: <!--html_preserve--><table width='100%'><tr><td align='right'><!--/html_preserve-->20-12-2022 <!--html_preserve--></td></tr></table><!--/html_preserve-->
-pagetitle: "REDCapDM"
-subtitle: <!--html_preserve--><table width='100%'><tr><td align='center'><h6><u><!--/html_preserve-->**REDCapDM** <!--html_preserve--></u></h6></td></tr></table><!--/html_preserve-->
+title: "REDCapDM"
+description: |
+  A tidy dataset has variables in columns, observations in rows, and one
+  value in each cell. This vignette introduces the theory of "tidy data"
+  and shows you how it saves you time during data analysis.
 output:
   rmarkdown::html_vignette:
     toc: true
     toc_depth: 5
-    css: markdown.css
     number_sections: true
 package: "`REDCapDM`"
 vignette: >
@@ -21,10 +22,15 @@ library(REDCapDM)
 library(kableExtra)
 ```
 
+<br>
+<br>
 
 # **Introduction**
 
 The REDCapDM package will first allow us to read both data exported directly from REDCap and through an API connection. Next, it will allow us to create reports of queries such as outliers or missing values, and to track them. Finally, we will be able to preprocess previously downloaded data.
+
+<br>
+<br>
 
 # **Functions**
 
@@ -44,6 +50,8 @@ Functions included in the package:
 
 - <u>rd_insert_na</u>: manual entry of a 'missing' in specific variables using a filter.
 
+<br>
+<br>
 
 # **Examples**
 
@@ -84,6 +92,7 @@ head(datos_redcap$data[,1:3])
 ```{r echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
 head(datos_redcap$dictionary[,1:3])
 ```
+
 
 ## **rd_transform**
 
