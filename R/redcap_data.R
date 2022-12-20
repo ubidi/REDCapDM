@@ -31,7 +31,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, uri = NA, token = NA)
     file.lines.collapsed <- paste(file.lines, collapse='\n')
     command <- paste0("dirname(parent.frame(2)$","data_path",")")
     setwd(eval(parse(text=command)))
-    source(textConnection(file.lines.collapsed), local = tmp_env)
+    source(textConnection(file.lines.collapsed), local = tmp_env, encoding="UTF-8")
     data <- get("data", envir = tmp_env)
     if (names(data)[1]!="record_id") {
       names(data)[1] <- "record_id"
