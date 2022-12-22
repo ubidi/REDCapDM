@@ -9,7 +9,7 @@ Title: REDCap Data Management
 
 Version: 0.1.0
 
-Authors: João Carmezim, Judith Peñafiel, Pau Satorra, Esther García, Natàlia Pallarés, Cristian Tebé.
+Authors: João Carmezim, Judith Peñafiel, Pau Satorra, Esther García, Natàlia Pallarés, Naiara Santos, Cristian Tebé.
 
 Maintainer: João Carmezim, Pau Satorra
 
