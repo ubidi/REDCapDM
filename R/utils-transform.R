@@ -4,7 +4,7 @@
 #' @description
 #' Function that recalculates every calculated field if the logic can be transcribed to R. Recall that calculated fields with smart-variables in the logic or variables in other events cannot be transcribed.
 #'
-#' The function will return the dataset and dictionary with the added recalculated variables (the name of the calculated field + `_recalc`) and also a report with the name of all the calculated fields and if they cannot be transcribed and, if so, they are equal.
+#' The function will return the dataset and dictionary with the added recalculated variables (the name of the calculated field + `_recalc`) along with a table that shows the summary of the results.
 #' @param data Dataset containing the REDCap data.
 #' @param dic Dataset containing the REDCap dictionary.
 #' @importFrom rlang :=
@@ -12,7 +12,7 @@
 ############Calculated functions############
 recalculate <- function(data, dic){
 
-  field_type <- choices_calculations_or_slider_labels <- field_name <- trans <- recalc <- is_equal <- trans2 <- n <- N <- text1 <- text2 <- NULL
+  field_type <- choices_calculations_or_slider_labels <- field_name <- trans <- recalc <- is_equal <- trans2 <- n <- N <- text1 <- text2 <- results <- NULL
 
   #Calculate for each calculated field the transcribed logic and if possible to transcribe recalculate it
 
@@ -80,19 +80,7 @@ recalculate <- function(data, dic){
 
   }
 
-  report <- calc %>%
-    dplyr::mutate(trans2 = ifelse(!is.na(trans), "Yes", "No")) %>%
-    dplyr::arrange(trans2, is_equal) %>%
-    dplyr::select(field_name, "redcap_logic" = choices_calculations_or_slider_labels, "r_logic" = trans, is_equal)
-
-  out <- list(
-    data = data,
-    dic = dic,
-    report = report
-  )
-
-  #Make a report of the results for each calculated variable
-
+  #Summary of the results
 
   report1 <- calc %>%
     dplyr::mutate(n = 1) %>%
@@ -106,16 +94,20 @@ recalculate <- function(data, dic){
     ) %>%
     dplyr::select("Total calculated fields" = N, "Non-transcribed fields" = text1, "Recalculated different fields" = text2)
 
-  print(knitr::kable(report1, "pipe", align = c("ccc")))
+  results <- knitr::kable(report1, "pipe", align = "ccc")
 
   report2 <- calc %>%
     dplyr::mutate(trans2 = ifelse(!is.na(trans), "Yes", "No")) %>%
     dplyr::arrange(trans2, is_equal) %>%
     dplyr::select(field_name, "Transcribed?" = trans2, "Is equal?" = is_equal)
 
-  print(knitr::kable(report2, "pipe", align = c("ccc")))
+  results <- c(results, "\n", knitr::kable(report2, "pipe", align = "ccc"))
 
-  out
+  list(
+    data = data,
+    dic = dic,
+    results = results
+  )
 
 }
 
@@ -126,6 +118,8 @@ recalculate <- function(data, dic){
 #'
 #' @description
 #' Inspects all the checkboxes of the study and looks if there is a question door linked to them (a branching logic evaluating another variable). If there is one, when this variable is missing it directly inputs a missing to the checkbox. If a gatekeeper question variable cannot be found or the logic in the branching logic cannot be transcribed because of the presence of some smart variables, the variable is added in the list of the reviewable ones that will be printed.
+#'
+#' The function will return the dataset with the transformed checkboxes along with a table that shows a summary of the results.
 #' @param data Dataset containing the REDCap data.
 #' @param dic Dataset containing the REDCap dictionary.
 #' @param checkbox_labels Character vector with the names that will have the two options of every checkbox variable. Default is `c('No', 'Yes')`.
@@ -133,12 +127,13 @@ recalculate <- function(data, dic){
 transform_checkboxes <- function(data, dic, checkbox_labels = c("No", "Yes")){
 
   vars <- dic$field_name[dic$field_type=="checkbox"]
+  results <- results1 <- results2 <- NULL
+  caption <- "Checkbox variables advisable to be reviewed"
 
   if(length(vars) > 0){
 
     review <- NULL
     review2 <- NULL
-    any_changed <- FALSE
     for(i in 1:length(vars)){
 
       #Identify all the variables in the database that belong to this checkbox (one for each one of the options)
@@ -157,7 +152,6 @@ transform_checkboxes <- function(data, dic, checkbox_labels = c("No", "Yes")){
         if(!inherits(rlogic, "try-error")){
 
           for(j in 1:length(vars_data)){
-            any_changed <- TRUE
             data[,vars_data[j]] <- ifelse(eval(parse(text=rlogic)),as.character(data[,vars_data[j]]),NA)
           }
 
@@ -174,23 +168,27 @@ transform_checkboxes <- function(data, dic, checkbox_labels = c("No", "Yes")){
 
     }
 
-    if(any_changed){
-      print(stringr::str_glue("\nMissing values of checkboxes with branching logic that can be transcribed have been transformed.\n\n"))
-    }
-
+    #Summary with the results
     if(!is.null(review)){
-      print(stringr::str_glue("There are some checkbox variables that don't have any branching logic. It is advisable to review them:\n\n{paste(review,collapse=', ')}\n\n"))
+      results1 <- tibble::tibble("Variables without any branching logic" = review)
+      results <- knitr::kable(results1, "pipe", align = c("ccc"), caption = caption)
+      if(!is.null(review2)){
+        results <- c(results, "\n")
+        caption <- NULL
+      }
     }
 
     if(!is.null(review2)){
-      print(stringr::str_glue("There are some checkbox variables that the logic cannot be transcribed to R. It is advisable to review them:\n\n{paste(review2,collapse=', ')}\n\n"))
+      results2 <- tibble::tibble("Variables with a logic that can't be transcribed" = review2)
+      results <- c(results, knitr::kable(results2, "pipe", align = c("ccc"), caption = caption))
     }
 
   }else{
-    print("There isn't any checkbox variable in the dataset\n\n")
+    warning("There isn't any checkbox variable in the dataset", call. = FALSE)
   }
 
-  data
+  list(data = data,
+       results = results)
 }
 
 #' Change checkboxes names into the name of their options
@@ -299,7 +297,7 @@ transform_name <- function(var_check,name,labels){
 #' @param dic Preprocessed dictionary.
 #' @param event Downloaded instrument-event mapping from REDCap.
 #' @param which Specify an event if only data for the desired event is wanted.
-dades_events <- function(data,dic,event,which=NULL){
+split_event <- function(data,dic,event,which=NULL){
 
   form <- unique_event_name <- field_type <- field_name <- branching_logic_show_field_only_if <- filtre_events <- no_filtre_events <- redcap_event_name <- vars_clau <- logic <- l <- events <- vars <- NULL
 
@@ -352,17 +350,13 @@ dades_events <- function(data,dic,event,which=NULL){
 
   vars_more <- var_event$field_name[!var_event$field_name%in%names(data)]
 
-  if(length(vars_more)==0){
-    print("There're no more variables found in the dictionary than in the data base. The transformation can continue...")
-  }else{
+  if(length(vars_more)>0){
     stop("There're more variables in the dictionary than in the data base. Transformation stops", call. = FALSE)
   }
 
   vars_less <- names(data)[!names(data)%in%var_event$field_name]
 
-  if(length(vars_less)==0){
-    print("There're no more variables found in the data base than in the dictionary. The transformation can continue...")
-  }else{
+  if(length(vars_less)>0){
     stop("There're more variables in the data base than in the dictionary. Transformation stops", call. = FALSE)
   }
 
@@ -378,8 +372,6 @@ dades_events <- function(data,dic,event,which=NULL){
                      dplyr::filter(redcap_event_name==.x) %>%
                      dplyr::select(tidyselect::all_of(.y))%>% dplyr::relocate(record_id)))
 
-
-  print("Transformation done")
 
   if(!is.null(which)){
     ndata$df[[which(ndata$events==which)]]
@@ -399,7 +391,7 @@ dades_events <- function(data,dic,event,which=NULL){
 #' @param which Specify a form if only data for the desired form is wanted.
 #' @param wide If the dataset needs to be in a wide format or not (long).
 
-dades_forms <- function(data, dic, event, which = NULL, wide=FALSE){
+split_form <- function(data, dic, event, which = NULL, wide=FALSE){
 
   field_type <- field_name <- vars <- events <- vars_esp <- df <- NULL
 
@@ -415,9 +407,7 @@ dades_forms <- function(data, dic, event, which = NULL, wide=FALSE){
 
   vars_more <- dic$field_name[!dic$field_name%in%names(data)]
 
-  if(length(vars_more)==0){
-    print("There're no more variables found in the dictionary than in the data base. The transformation can continue...")
-  }else{
+  if(length(vars_more)>0){
     stop("There're more variables in the dictionary than in the data base. Transformation stops", call. = FALSE)
   }
 
@@ -425,9 +415,7 @@ dades_forms <- function(data, dic, event, which = NULL, wide=FALSE){
   #Remove the REDCap basic variables that are found in the database but not in the dictionary
   vars_less <- vars_less[!vars_less %in% basic_redcap_vars]
 
-  if(length(vars_less)==0){
-    print("There're no more variables found in the data base than in the dictionary. The transformation can continue...")
-  }else{
+  if(length(vars_less)>0){
     stop("There're more variables in the data base than in the dictionary. Transformation stops", call. = FALSE)
   }
 
@@ -443,8 +431,6 @@ dades_forms <- function(data, dic, event, which = NULL, wide=FALSE){
     dplyr::mutate(df = purrr::map2(events,vars,~data %>%
                        dplyr::filter(redcap_event_name==.x) %>%
                        dplyr::select(tidyselect::all_of(.y))%>% dplyr::relocate(record_id)))
-
-  print("Transformation done")
 
   if(wide){
 

@@ -1,11 +1,11 @@
 #' Read REDCap data
 #'
 #' @description
-#' This function allows you to read datasets from REDCap through exported data or API.
+#' This function allows users to read datasets from a REDCap project, through exported data or an API connection, into R for analysis.
 #'
 #' The REDCap API is an interface that allows communication with REDCap and server without going through the interactive REDCap interface.
 #'
-#' If you will give further use to the package, we advise you to use the argument 'dic_path' to read your dictionary, since all other functions need it in order to run properly.
+#' @note If you will give further use to the package, we advise you to use the argument 'dic_path' to read your dictionary, since all other functions need it in order to run properly.
 #'
 #' @param data_path Character string with the pathname of the R file to read the dataset from.
 #' @param dic_path Character string with the pathname of the dictionary.
@@ -19,6 +19,9 @@
 
 redcap_data<-function(data_path = NA, dic_path = NA, uri = NA, token = NA)
   {
+  oldwd <- getwd()
+  on.exit(setwd(oldwd))
+
   if(all(!c(data_path, dic_path)%in%NA)&any(!c(token,uri)%in%NA)){
     stop("Too many arguments, if you want to read exported data from REDCap use only the arguments data_path and dic_path", call. = FALSE)
   }

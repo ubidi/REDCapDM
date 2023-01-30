@@ -11,7 +11,6 @@ rd_event(
   dic,
   data,
   addTo = NA,
-  silent = FALSE,
   report_title = NA,
   report_zeros = FALSE
 )
@@ -29,17 +28,15 @@ rd_event(
 
 \item{addTo}{Data frame corresponding to a prior report of queries to which you can add the new data frame of queries. By default, the function will always generate a new data frame without taking into account former reports.}
 
-\item{silent}{Logical. If `TRUE`, it does not return a report with the number of queries by event.}
-
 \item{report_title}{Character string with the report's title.}
 
 \item{report_zeros}{Logical. If `TRUE`, it returns a report including events with zero queries.}
 }
 \value{
-A dataframe with 9 columns meant to help the user identify each missing event.
+A dataframe with 9 columns meant to help the user identify each missing event and a table with the total of queries per variable.
 }
 \description{
-By default, if a record identifier has no information of a designated event, REDCap will not download it.
+When working with a longitudinal REDCap project, the exported data has a structure where each row represents one event per record. However, by default, REDCap will not export events that do not have information.
 This function allows you to point out which record identifiers do not have information of a determined event.
 }
 \examples{

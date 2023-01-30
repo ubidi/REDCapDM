@@ -19,12 +19,12 @@ redcap_data(data_path = NA, dic_path = NA, uri = NA, token = NA)
 List with the dataset and the dictionary of the corresponding REDCap project.
 }
 \description{
-This function allows you to read datasets from REDCap through exported data or API.
+This function allows users to read datasets from a REDCap project, through exported data or an API connection, into R for analysis.
 
 The REDCap API is an interface that allows communication with REDCap and server without going through the interactive REDCap interface.
-
-If you will give further use to the package, we advise you to use the argument 'dic_path' to read your dictionary, since all other functions need it in order to run properly.
 }
 \note{
+If you will give further use to the package, we advise you to use the argument 'dic_path' to read your dictionary, since all other functions need it in order to run properly.
+
 To read exported data you have to first use REDCap's 'Export Data' function and select the format 'R Statistical Software', then it will generate one CSV file with all observations and an R file with the necessary code to complete each variable information.
 }

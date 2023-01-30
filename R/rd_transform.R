@@ -1,6 +1,6 @@
 #' Transformation of the raw data
 #'
-#' Function that transforms the raw data from REDCap read by the function `redcap_data`. It returns both the transformed data and dictionary.
+#' Function that transforms the raw data from REDCap read by the function `redcap_data`. It returns the transformed data and dictionary along with the summary of the results of each step.
 #'
 #' @param data Database containing data from REDCap.
 #' @param dic Database containing the dictionary read from REDCap.
@@ -13,7 +13,7 @@
 #' @param which_event Character string indicating if only one event has to be returned if the final format selected is `by_event`.
 #' @param which_form Character string indicating if only one form has to be returned if the final format selected is `by_form`.
 #' @param wide Logical indicating if the data split by form (if selected) has to be in a wide format or in a long one.
-#' @return List with the transformed dataset and dictionary.
+#' @return List with the transformed dataset, dictionary and the results
 #'
 #' @examples
 #' rd_transform(data = covican$data,
@@ -32,6 +32,7 @@ rd_transform <- function(data, dic, event_path = NULL, checkbox_labels = c("No",
   record_id <- NULL
   redcap_event_name.factor <- NULL
   field_name <- NULL
+  results <- NULL
 
   if(final_format == "by_event" & is.null(event_path)){
     stop("To split the data by event the event_path has to be provided", call. = FALSE)
@@ -76,14 +77,16 @@ rd_transform <- function(data, dic, event_path = NULL, checkbox_labels = c("No",
   #Recalculate calculated fields (previous to transforming factors and other preprocessing)
   #It wil create duplicate variables of each calculated field with "_recalc" in the end and the recalculated value
 
-  cat("1. Recalculating calculated fields... Saving them as '[field_name]_recalc'...")
+  results <- c(results, "1. Recalculating calculated fields and saving them as '[field_name]_recalc'\n")
 
-  data_dic_recalc <- recalculate(data, dic)
+  recalc <- recalculate(data, dic)
 
-  data <- data_dic_recalc$data
-  dic <- data_dic_recalc$dic
+  data <- recalc$data
+  dic <- recalc$dic
 
-  cat("\n\n2. Transforming checkboxes... Changing their values to No/Yes, their names to the names of its options and transforming missing values of those checkboxes having question doors specified in the branching logic\n\n")
+  results <- c(results, recalc$results)
+
+  results <- c(results, "\n2. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a question door specified in the branching logic, converting some of their values to missing\n")
 
   #Identify checkbox variables:
   var_check<-names(data)[grep("___",names(data))]
@@ -97,7 +100,11 @@ rd_transform <- function(data, dic, event_path = NULL, checkbox_labels = c("No",
 
   #Transform missings of checkboxes with question doors:
 
-  data <- transform_checkboxes(data,dic,checkbox_labels)
+  trans <- transform_checkboxes(data,dic,checkbox_labels)
+
+  data <- trans$data
+
+  results <- c(results, trans$results)
 
   #Transform them to No/Yes:
 
@@ -114,7 +121,7 @@ rd_transform <- function(data, dic, event_path = NULL, checkbox_labels = c("No",
   #Replace original variables with their factor version except for redcap_event_name and redcap_data_access_group
   #If we dont want to convert another additional variable to factor we can specify it with the exclude argument: to_factor(data, exclude = "var")
 
-  cat("3. Replacing original variables for their factor version...\n\n")
+  results <- c(results,"\n3. Replacing original variables for their factor version")
 
   data <- to_factor(data, exclude = exclude_to_factor)
 
@@ -151,7 +158,7 @@ rd_transform <- function(data, dic, event_path = NULL, checkbox_labels = c("No",
   }
 
 
-  cat("4. Deleting variables that contain some patterns...\n\n")
+  results <- c(results, "4. Deleting variables that contain some patterns")
 
   ind <- 5
   if(!is.null(delete_vars)){
@@ -180,7 +187,7 @@ rd_transform <- function(data, dic, event_path = NULL, checkbox_labels = c("No",
 
     if(length(var_noevent) > 0){
 
-      cat(stringr::str_glue("{ind}. Erasing variables from forms that are not linked to any event...\n\n"))
+      results <- c(results, stringr::str_glue("{ind}. Erasing variables from forms that are not linked to any event"))
       ind <- ind + 1
 
       var_noevent <- var_noevent[var_noevent %in% names(data)]
@@ -194,22 +201,22 @@ rd_transform <- function(data, dic, event_path = NULL, checkbox_labels = c("No",
 
     if(final_format == "by_event"){
 
-      cat(stringr::str_glue("{ind}. Final arrangment of the data by event...\n\n"))
+      results <- c(results,stringr::str_glue("{ind}. Final arrangment of the data by event"))
       ind <- ind + 1
 
       if(is.null(which_event)){
 
-        data <- dades_events(data,dic,event)
+        data <- split_event(data,dic,event)
 
       }else{
 
-        data <- dades_events(data,dic,event,which=which_event)
+        data <- split_event(data,dic,event,which=which_event)
 
       }
 
     }else if(final_format == "by_form"){
 
-      cat(stringr::str_glue("{ind}. Final arrangment of the data by form...\n\n"))
+      results <- c(results, stringr::str_glue("{ind}. Final arrangment of the data by form"))
       ind <- ind + 1
 
       if(is.null(wide)){
@@ -218,11 +225,11 @@ rd_transform <- function(data, dic, event_path = NULL, checkbox_labels = c("No",
 
       if(is.null(which_form)){
 
-        data <- dades_forms(data, dic, event, which = NULL, wide)
+        data <- split_form(data, dic, event, which = NULL, wide)
 
       }else{
 
-        data <- dades_forms(data, dic, event, which=which_form, wide)
+        data <- split_form(data, dic, event, which=which_form, wide)
 
       }
 
@@ -230,13 +237,15 @@ rd_transform <- function(data, dic, event_path = NULL, checkbox_labels = c("No",
 
     list(
       data = data,
-      dictionary = dic
+      dictionary = dic,
+      results = stringr::str_glue("{results}")
     )
 
   }else{
     list(
       data = data,
-      dictionary = dic
+      dictionary = dic,
+      results = stringr::str_glue("{results}")
     )
   }
 

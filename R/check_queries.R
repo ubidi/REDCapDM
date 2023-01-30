@@ -1,19 +1,19 @@
-#' Check modifications between two dataset of queries
+#' Check modifications between two report of queries
 #'
-#' This function compares a former dataset of queries with a new one and allows you to check which of the old queries were resolved, which are yet to be resolved and which of them are new.
-#' @param old Old version of the dataset of queries.
-#' @param new New version of the dataset of queries. This object will be used to determine the status of each query.
-#' @return A data frame with a merge of all queries plus a column indicating which queries were resolved or are new comparing to the old queries dataset.
+#' This function compares a previous report of queries with a new one and allows you to check which queries are new, which have been modified, and which remain unchanged.
+#' @param old Previous version of the report of queries.
+#' @param new New version of the report of queries. This object will be used to determine the status of each query.
+#' @return A list composed by a data frame that combines all queries and includes a column that shows the status of the queries (new, modified, or unchanged) when compared to the previous report of queries. In addition to this data frame, it also has a summary of the total number of queries per category.
 #' @examples
 #' data_old <- rd_query(variables = "copd",
 #'                      expression = "%in%NA",
-#'                      event = "initial_visit_arm_1",
+#'                      event = "baseline_visit_arm_1",
 #'                      dic = covican$dictionary,
 #'                      data = covican$data)
-#' data_new <- rbind(data_old[1:5,], c("100-20",rep("abc",8)))
+#' data_new <- rbind(data_old$queries[1:5,], c("100-20",rep("abc",8)))
 #'
 #' # Control of queries
-#' check <- check_queries(old = data_old,
+#' check <- check_queries(old = data_old$queries,
 #'                        new = data_new)
 #' @export
 
@@ -57,8 +57,9 @@ check_queries <-function(old, new)
   report <- report[order(as.numeric(report[,2]), decreasing = TRUE),]
   names(report) <- c("State", "Total")
   rownames(report) <- NULL
-  print(knitr::kable(report, "pipe", align = c("cc"), caption = "Report of modifications"))
 
-  return(check)
+  # Return the final product
+  list(queries = check,
+       results = knitr::kable(report, "pipe", align = c("cc"), caption = "Report of modifications"))
 }
 

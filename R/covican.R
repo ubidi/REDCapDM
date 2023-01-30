@@ -6,7 +6,7 @@
 #' @keywords datasets
 #' @usage data(covican)
 #'
-#' @note It is a list containing two dataframes: the first one with the data and the other one with the dictionary (`codebook`) of this project in REDCap.
+#' @note List containing two dataframes: the first one with the data and the other one with the dictionary (`codebook`) of the REDCap project.
 #'
 #' @format A data frame with 342 rows and 56 columns
 #'  \describe{
@@ -19,17 +19,17 @@
 #'   \item{exc_1:}{Exclusion criteria of 'Solid tumour remission >1 year' (0 = No ; 1 = Yes)}
 #'   \item{screening_fail_crit:}{Indicator of non-compliance with inclusion and exclusion criteria (0 = compliance ; 1 = non-compliance)}
 #'   \item{d_birth:}{Date of birth (y-m-d). This date does not correspond to the original.}
-#'   \item{d_ingreso:}{Date of first visit (y-m-d). This date does not correspond to the original.}
+#'   \item{d_admission:}{Date of first visit (y-m-d). This date does not correspond to the original.}
 #'   \item{age:}{Age in years}
 #'   \item{dm:}{Indicator of diabetes (0 = No ; 1 = Yes)}
 #'   \item{type_dm:}{Type of diabetes (1 = No complications ; 2 = End-organ diabetes-related disease)}
-#'   \item{copd:}{Indicator of chronic pulmonary disease (0 = No ; 1 = Yes)}
-#'   \item{fio2_aportado:}{Fraction of inspired oxygen in percentage}
-#'   \item{analitica_disponible:}{Indicator of blood test available (0 = No ; 1 = Yes)}
+#'   \item{copd:}{Indicator of chronic obstructive pulmonary disease (0 = No ; 1 = Yes)}
+#'   \item{fio2:}{Fraction of inspired oxygen in percentage}
+#'   \item{available_analytics:}{Indicator of blood test available (0 = No ; 1 = Yes)}
 #'   \item{potassium:}{Potassium in mmol/L}
-#'   \item{resp_freq:}{Respiratory rate in bpm}
-#'   \item{hemato_neo:}{Indicator of leukemia or lymphoma (0 = No ; 1 = Yes)}
-#'   \item{leukemia:}{Indicator of acute leukemia (0 = No ; 1 = Yes)}
+#'   \item{resp_rate:}{Respiratory rate in bpm}
+#'   \item{leuk_lymph:}{Indicator of leukemia or lymphoma (0 = No ; 1 = Yes)}
+#'   \item{acute_leuk:}{Indicator of acute leukemia (0 = No ; 1 = Yes)}
 #'   \item{type_underlying_disease[...]:}{Checkbox with the type of underlying disease (0 = Haematological cancer ; 1 = Solid tumour)}
 #'   \item{underlying_disease_hemato[...]:}{Checkbox with the type of underlying disease (1 = Acute myeloid leukemia ; 2 = 	Myelodysplastic syndrome ; 3 = Chronic myeloid leukaemia ; 4 = Acute lymphoblastic leukaemia ; 5 = 	Hodgkin lymphoma ; 6 = Non Hodgkin lymphoma ; 7 = Multiple myeloma ; 8 = Myelofibrosis ; 9 = Aplastic anaemia ; 10 = Chronic lymphocytic leukaemia ; 11 = Amyloidosis ; 12 = Other)}
 #'   \item{urine_culture:}{Indicator of urine culture: (0 = Not done ; 1 = Done)}

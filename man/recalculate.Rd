@@ -14,5 +14,5 @@ recalculate(data, dic)
 \description{
 Function that recalculates every calculated field if the logic can be transcribed to R. Recall that calculated fields with smart-variables in the logic or variables in other events cannot be transcribed.
 
-The function will return the dataset and dictionary with the added recalculated variables (the name of the calculated field + `_recalc`) and also a report with the name of all the calculated fields and if they cannot be transcribed and, if so, they are equal.
+The function will return the dataset and dictionary with the added recalculated variables (the name of the calculated field + `_recalc`) along with a table that shows the summary of the results.
 }

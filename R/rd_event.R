@@ -1,6 +1,6 @@
 #' Identification of missing event/s
 #'
-#' By default, if a record identifier has no information of a designated event, REDCap will not download it.
+#' When working with a longitudinal REDCap project, the exported data has a structure where each row represents one event per record. However, by default, REDCap will not export events that do not have information.
 #' This function allows you to point out which record identifiers do not have information of a determined event.
 #'
 #' @param event Vector with the REDCap's events names to be analyzed.
@@ -9,10 +9,9 @@
 #' @param dic R object corresponding to the dictionary of the dataset.
 #' @param data R object corresponding to the dataset.
 #' @param addTo Data frame corresponding to a prior report of queries to which you can add the new data frame of queries. By default, the function will always generate a new data frame without taking into account former reports.
-#' @param silent Logical. If `TRUE`, it does not return a report with the number of queries by event.
 #' @param report_title Character string with the report's title.
 #' @param report_zeros Logical. If `TRUE`, it returns a report including events with zero queries.
-#' @return A dataframe with 9 columns meant to help the user identify each missing event.
+#' @return A dataframe with 9 columns meant to help the user identify each missing event and a table with the total of queries per variable.
 #' @examples
 #' example <- rd_event(event = "follow_up_visit_da_arm_1",
 #'                     dic = covican$dictionary,
@@ -20,7 +19,7 @@
 #' example
 #' @export
 
-rd_event <- function(event, filter = NA, query_name = NA, dic, data, addTo = NA, silent = FALSE, report_title = NA, report_zeros = FALSE)
+rd_event <- function(event, filter = NA, query_name = NA, dic, data, addTo = NA, report_title = NA, report_zeros = FALSE)
   {
     Code <- NULL
     Identifier <- NULL
@@ -153,7 +152,6 @@ rd_event <- function(event, filter = NA, query_name = NA, dic, data, addTo = NA,
       queries <- queries[, names(queries)[which(!names(queries) %in% c("cod"))]]
 
       # Creation of the report indicating the variables checked and the total of queries generated for each one
-      if (silent == FALSE) {
       report <- data.frame("var" = queries$Event, "descr" = queries$Description)
       if (all(addTo %in% NA)) {
         report$var <- factor(report$var, levels = c(unique(event)))
@@ -170,21 +168,20 @@ rd_event <- function(event, filter = NA, query_name = NA, dic, data, addTo = NA,
       names(report) <- c("Events", "Description", "Total")
       rownames(report) <- NULL
       if (all(report_title %in% NA)) {
-        print(knitr::kable(report, "pipe", align = c("ccc"), caption = "Report of queries"))
+        result <- knitr::kable(report, "pipe", align = c("ccc"), caption = "Report of queries")
       }
       if (all(!report_title %in% NA) & length(report_title) == 1) {
-        print(knitr::kable(report, "pipe", align = c("ccc"), caption = report_title))
+        result <- knitr::kable(report, "pipe", align = c("ccc"), caption = report_title)
       }
       if (all(!report_title %in% NA) & length(report_title) > 1) {
         stop("There is more than one title for the report, please choose only one.", call. = FALSE)
       }
-      }
+
     } else {
       # If there is none query, the function still creates a report with the different events showing zeros as the total number of queries.
       # Warning: if there is none query to be identified
       warning("There is no query to be identified.", call. = FALSE)
 
-      if(silent == FALSE){
         report <- data.frame("var" = queries$Event, "descr" = queries$Description)
         if (all(addTo %in% NA)) {
           report$var <- factor(report$var, levels = c(unique(event)))
@@ -200,17 +197,16 @@ rd_event <- function(event, filter = NA, query_name = NA, dic, data, addTo = NA,
         names(report) <- c("Events", "Description", "Total")
         rownames(report) <- NULL
         if (all(report_title %in% NA)) {
-          print(knitr::kable(report, "pipe", align = c("ccc"), caption = "Report of queries"))
+          result <- knitr::kable(report, "pipe", align = c("ccc"), caption = "Report of queries")
         }
         if (all(!report_title %in% NA) & length(report_title) == 1) {
-          print(knitr::kable(report, "pipe", align = c("ccc"), caption = report_title))
+          result <- knitr::kable(report, "pipe", align = c("ccc"), caption = report_title)
         }
         if (all(!report_title %in% NA) & length(report_title) > 1) {
           stop("There is more than one title for the report, please choose only one.", call. = FALSE)
         }
-
-      }
     }
     # Return the final product
-    return(queries)
+    list(queries = queries,
+         results = result)
   }

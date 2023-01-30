@@ -42,10 +42,10 @@ rd_transform(
 \item{wide}{Logical indicating if the data split by form (if selected) has to be in a wide format or in a long one.}
 }
 \value{
-List with the transformed dataset and dictionary.
+List with the transformed dataset, dictionary and the results
 }
 \description{
-Function that transforms the raw data from REDCap read by the function `redcap_data`. It returns both the transformed data and dictionary.
+Function that transforms the raw data from REDCap read by the function `redcap_data`. It returns the transformed data and dictionary along with the summary of the results of each step.
 }
 \examples{
 rd_transform(data = covican$data,

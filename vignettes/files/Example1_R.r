@@ -1,5 +1,5 @@
 #Clear existing data and graphics
-rm(list=ls())
+
 graphics.off()
 #Load Hmisc library
 library(Hmisc)

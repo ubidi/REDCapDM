@@ -15,4 +15,6 @@ transform_checkboxes(data, dic, checkbox_labels = c("No", "Yes"))
 }
 \description{
 Inspects all the checkboxes of the study and looks if there is a question door linked to them (a branching logic evaluating another variable). If there is one, when this variable is missing it directly inputs a missing to the checkbox. If a gatekeeper question variable cannot be found or the logic in the branching logic cannot be transcribed because of the presence of some smart variables, the variable is added in the list of the reviewable ones that will be printed.
+
+The function will return the dataset with the transformed checkboxes along with a table that shows a summary of the results.
 }

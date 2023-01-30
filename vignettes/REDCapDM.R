@@ -2,348 +2,348 @@
 rm(list = ls())
 library(REDCapDM)
 library(kableExtra)
+library(knitr)
+
+## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
+data(covican)
+
+## ----echo=FALSE, message=FALSE, warning=FALSE, comment=NA---------------------
+str(covican, max.level = 1)
+
+## ----echo=FALSE, message=FALSE, warning=FALSE, comment=NA---------------------
+descr <- c("Identifier of each record", "",
+           "Auto-generated name of the events", "",
+           "Auto-generated name of each center", "",
+           "Patients older than 18 years", "No ; Yes",
+           "Cancer patients", "No ; Yes",
+           "Diagnosed of COVID-19", "No ; Yes",
+           "Solid tumour remission >1 year", "No ; Yes",
+           "Indicator of non-compliance with inclusion and exclusion criteria", "Compliance ; Non-compliance",
+           "Date of birth (y-m-d)", "",
+           "Date of first visit (y-m-d)", "",
+           "Age", "",
+           "Indicator of diabetes", "No ; Yes",
+           "Type of diabetes", "No complications ; End-organ diabetes-related disease",
+           "Indicator of chronic pulmonary disease", "No ; Yes",
+           "Fraction of inspired oxygen (%)", "",
+           "Indicator of blood test available", "No ; Yes",
+           "Potassium (mmol/L)", "",
+           "Respiratory rate (bpm)", "",
+           "Indicator of leukemia or lymphoma", "No ; Yes",
+           "Indicator of acute leukemia", "No ; Yes")
+
+vars <- data.frame("Name" = names(covican$data %>% dplyr::select(record_id:acute_leuk)),
+                   "Description" = descr[seq(1, length(descr), 2)],
+                   "Categories" = descr[seq(2, length(descr), 2)])
+
+kable(vars) %>% 
+  kableExtra::row_spec(0,bold=TRUE) %>% 
+  kableExtra::kable_styling(full_width = F)
 
 ## ----message=FALSE, warning=FALSE, comment=NA, eval=FALSE---------------------
-#  datos <- redcap_data(data_path="C:/Users/username/example.r",
-#                       dic_path="C:/Users/username/example_dictionary.csv")
+#  dataset <- redcap_data(data_path="C:/Users/username/example.r",
+#                         dic_path="C:/Users/username/example_dictionary.csv")
 
 ## ----eval=FALSE, message=FALSE, warning=FALSE, comment=NA---------------------
-#  datos_api <- redcap_data(uri ="https://redcap.idibell.cat/api/",
-#                           token = "55E5C3D1E83213ADA2182A4BFDEA")
+#  dataset_api <- redcap_data(uri ="https://redcap.idibell.cat/api/",
+#                             token = "55E5C3D1E83213ADA2182A4BFDEA")
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-datos_redcap <- covican
+covican_transformed <- rd_transform(data = covican$data, 
+                                    dic = covican$dictionary)
 
-## ----echo=FALSE, message=FALSE, warning=FALSE, comment=NA---------------------
-str(datos_redcap, max.level = 1)
-
-## ----echo=FALSE, message=FALSE, warning=FALSE, comment=NA---------------------
-head(datos_redcap$data[,1:3])
-
-## ----echo=FALSE, message=FALSE, warning=FALSE, comment=NA---------------------
-head(datos_redcap$dictionary[,1:3])
-
-## ----message=FALSE, warning=FALSE, include=FALSE------------------------------
-RutinesLocals<-'S:/5_CodiR/1_Funcions/rutines'
-source(file.path(RutinesLocals,'table2.R'))
+#Print the results of the transformation
+covican_transformed$results
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-datos <- rd_transform(
-  data = datos_redcap$data, 
-  dic = datos_redcap$dictionary
-)
+dataset <- rd_transform(data = covican$data, 
+                        dic = covican$dictionary,
+                        event_path = "files/COVICAN_instruments.csv",
+                        final_format = "by_event")
 
-data <- datos$data
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-data %>% 
-  dplyr::select(d_birth, d_ingreso, age, age_recalc) %>% 
-  dplyr::filter(age != age_recalc)
+#To print the results
+dataset$results
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-#Checkbox no gatekeeper
-
-table(data$type_underlying_disease_haematological_cancer)
-
-#Checkbox with gatekeeper: [type_underlying_disease(0)]='1'
-
-#In the original data set:
-table(datos_redcap$data$type_underlying_disease___0, datos_redcap$data$underlying_disease_hemato___1)
-
-#In the transformed data set:
-table(data$type_underlying_disease_haematological_cancer, data$underlying_disease_hemato_acute_myeloid_leukemia)
+dataset$data
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-str(data$dm)
+dataset <- rd_transform(data = covican$data, 
+                        dic = covican$dictionary,
+                        event_path = "files/COVICAN_instruments.csv",
+                        final_format = "by_form")
+
+#To print the results
+dataset$results
+
+## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
+dataset$data
+
+## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
+dataset <- rd_transform(data = covican$data,
+                        dic = covican$dictionary,
+                        checkbox_labels = c("N", "Y"))
+
+## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
+dataset <- rd_transform(data = covican$data, 
+                        dic = covican$dictionary,
+                        exclude_to_factor = "dm")
+
+## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
+dataset <- rd_transform(data = covican$data, 
+                        dic = covican$dictionary,
+                        keep_labels = TRUE)
+
+str(dataset$data[,1:2])
+
+## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
+dataset <- rd_transform(data = covican$data, 
+                        dic = covican$dictionary,
+                        delete_vars = c("inc_", "exc_"))
+
+## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
+dataset <- rd_transform(data = covican$data, 
+                        dic = covican$dictionary,
+                        event_path = "files/COVICAN_instruments.csv",
+                        final_format = "by_event",
+                        which_event = "baseline_visit_arm_1")
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 
-datos <- rd_transform(
-             data = datos_redcap$data, 
-             dic = datos_redcap$dictionary,
-             event_path = "S:/5_CodiR/2_CodiR/Queries/202027COVICAN_InstrumentDesignations_2022-12-13.csv",
-             final_format = "by_event"
-             )
+dataset <- rd_transform(data = covican$data, 
+                        dic = covican$dictionary,
+                        event_path = "files/COVICAN_instruments.csv",
+                        final_format = "by_form",
+                        which_form = "demographics")
 
+data <- dataset$data
 
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-datos$data
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-
-datos <- rd_transform(data = datos_redcap$data, 
-             dic = datos_redcap$dictionary,
-             event_path = "S:/5_CodiR/2_CodiR/Queries/202027COVICAN_InstrumentDesignations_2022-12-13.csv",
-             final_format = "by_form"
-             )
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-datos$data
-
-## ----results = 'hide', echo = TRUE, message=FALSE, warning=FALSE, comment=NA----
-datos <- rd_transform(
-  data = datos_redcap$data, 
-  dic = datos_redcap$dictionary,
-  checkbox_labels = c("N", "Y")
-)
-
-data <- datos$data
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-table(data$type_underlying_disease_haematological_cancer)
-
-## ----results = 'hide', echo = TRUE, message=FALSE, warning=FALSE, comment=NA----
-datos <- rd_transform(
-  data = datos_redcap$data, 
-  dic = datos_redcap$dictionary,
-  exclude_to_factor = "dm"
-)
-
-data <- datos$data
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-table(data$dm)
-
-## ----echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results = 'hide'----
-datos <- rd_transform(
-  data = datos_redcap$data, 
-  dic = datos_redcap$dictionary,
-  keep_labels = TRUE
-)
-
-data <- datos$data
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-str(data[,1:5])
-
-## ----results = 'hide', echo = TRUE, message=FALSE, warning=FALSE, comment=NA----
-datos <- rd_transform(
-  data = datos_redcap$data, 
-  dic = datos_redcap$dictionary,
-  delete_vars = c("inc_", "exc_")
-)
-
-data <- datos$data
-
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 names(data)
 
-## ----results = 'hide', echo = TRUE, message=FALSE, warning=FALSE, comment=NA----
-
-datos <- rd_transform(
-             data = datos_redcap$data, 
-             dic = datos_redcap$dictionary,
-             event_path = "S:/5_CodiR/2_CodiR/Queries/202027COVICAN_InstrumentDesignations_2022-12-13.csv",
-             final_format = "by_event",
-             which_event = "initial_visit_arm_1"
-             )
-
-data <- datos$data
-
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-table(data$redcap_event_name)
+dataset <- rd_transform(data = covican$data, 
+                        dic = covican$dictionary,
+                        event_path = "files/COVICAN_instruments.csv",
+                        final_format = "by_form",
+                        which_form = "laboratory_findings",
+                        wide = TRUE)
 
-## ----results = 'hide', echo = TRUE, message=FALSE, warning=FALSE, comment=NA----
-
-datos <- rd_transform(
-             data = datos_redcap$data, 
-             dic = datos_redcap$dictionary,
-             event_path = "S:/5_CodiR/2_CodiR/Queries/202027COVICAN_InstrumentDesignations_2022-12-13.csv",
-             final_format = "by_form",
-             which_form = "demographics"
-             )
-
-data <- datos$data
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-names(data)
-
-## ----results = 'hide', echo = TRUE, message=FALSE, warning=FALSE, comment=NA----
-
-datos <- rd_transform(
-             data = datos_redcap$data, 
-             dic = datos_redcap$dictionary,
-             event_path = "S:/5_CodiR/2_CodiR/Queries/202027COVICAN_InstrumentDesignations_2022-12-13.csv",
-             final_format = "by_form",
-             which_form = "laboratory_findings",
-             wide = TRUE
-             )
-
-data <- datos$data
-
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-head(data)
+head(dataset$data)
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 #screening failure
 rd_rlogic(logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)",
-          data = datos_redcap$data)
-
-#age
-rd_rlogic(logic = 'rounddown(datediff([d_birth],[d_ingreso],"y","dmy"),0)',
-          data = datos_redcap$data)
-
-## ----results = 'hide', echo = TRUE, message=FALSE, warning=FALSE, comment=NA----
-
-datos <- rd_transform(
-    data = datos_redcap$data, 
-    dic = datos_redcap$dictionary
-)
-
-data <- datos$data
-
+          data = covican$data)
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-#Before inserting missings
-table2(data$type_underlying_disease_haematological_cancer)
+#Raw transformation of the data:
+dataset <- rd_transform(data = covican$data, 
+                        dic = covican$dictionary)
 
-data2 <- rd_insert_na(
-  data = data,
-  filter = rep("age < 65", 2),
-  vars = grep("type_underlying_disease", names(data), value = TRUE)
-)
+#Before inserting missings
+table(dataset$data$type_underlying_disease_haematological_cancer)
+
+#Run the function
+dataset$data <- rd_insert_na(data = dataset$data,
+                             filter = "age < 65",
+                             vars = "type_underlying_disease_haematological_cancer")
 
 #After inserting missings
-table2(data2$type_underlying_disease_haematological_cancer)
-
+table(dataset$data$type_underlying_disease_haematological_cancer)
 
 ## ----message=FALSE, warning=FALSE, include=FALSE------------------------------
 example <- rd_query(variables = c("copd", "age"),
-                         expression = c("%in%NA", "%in%NA"),
-                         event = "initial_visit_arm_1",
-                         dic = datos_redcap$dictionary,
-                         data = datos_redcap$data)
-library(knitr)
+                    expression = c("%in%NA", "%in%NA"),
+                    event = "baseline_visit_arm_1",
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data)
 
 ## ----echo=FALSE, message=FALSE, warning=FALSE, comment=NA---------------------
-kable(head(example)) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra::kable_styling()
+kable(head(example$queries)) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra::kable_styling()
+
+example$results
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 example <- rd_query(variables = c("copd", "age"),
-                         expression = c("%in%NA", "%in%NA"),
-                         event = "initial_visit_arm_1",
-                         dic = datos_redcap$dictionary,
-                         data = datos_redcap$data)
+                    expression = c("%in%NA", "%in%NA"),
+                    event = "baseline_visit_arm_1",
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data)
 
-## ----message=FALSE, warning=FALSE, comment=NA, results='hide'-----------------
-example<- rd_query(variables = c("age", "copd"),
-                        variables_names = c("Age", "Chronic obstructive pulmonary disease"),#### OPCIONAL
-                        expression = c("%in%NA", "%in%NA"),
-                        query_name = c("Age is missing at baseline visit", "COPD"), #### OPCIONAL
-                        instrument = c("Inclusión del paciente","Inclusión"),  #### OPCIONAL
-                        event = "initial_visit_arm_1",
-                        dic = datos_redcap$dictionary,
-                        data = datos_redcap$data)
+# Printing results
+example$results
 
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
 example <- rd_query(variables = c("age", "copd", "potassium"),
-                          expression = c("%in%NA", "%in%NA", "%in%NA"),
-                          event = "initial_visit_arm_1",
-                          dic = datos_redcap$dictionary,
-                          data=datos_redcap$data)
+                    expression = c("%in%NA", "%in%NA", "%in%NA"),
+                    event = "baseline_visit_arm_1",
+                    dic = covican_transformed$dictionary,
+                    data=covican_transformed$data)
+
+# Printing results
+example$results
 
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
 example <- rd_query(variables = c("potassium"),
-                         expression = c("%in%NA"),
-                         event = "initial_visit_arm_1",
-                         dic = datos_redcap$dictionary,
-                         data = datos_redcap$data,
-                         filter = c("analitica_disponible=='1'"))
+                    expression = c("%in%NA"),
+                    event = "baseline_visit_arm_1",
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data,
+                    filter = c("available_analytics=='Yes'"))
+
+# Printing results
+example$results
 
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
-example <- rd_query(variables=c("age"),
-                         expression=c(">20"),
-                         event="initial_visit_arm_1",
-                         dic=datos_redcap$dictionary,
-                         data=datos_redcap$data)
+example <- rd_query(variables="age",
+                    expression=">70",
+                    event="baseline_visit_arm_1",
+                    dic=covican_transformed$dictionary,
+                    data=covican_transformed$data)
+
+# Printing results
+example$results
 
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
 example <- rd_query(variables=c("age", "copd"),
-                         expression=c("(>20 & <70) | %in%NA", "==1"),
-                         event="initial_visit_arm_1",
-                         dic=datos_redcap$dictionary,
-                         data=datos_redcap$data)
+                    expression=c(">70", "='Yes'"),
+                    event="baseline_visit_arm_1",
+                    dic=covican_transformed$dictionary,
+                    data=covican_transformed$data)
+
+# Printing results
+example$results
 
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
-exemple <- rd_query(variables = c("copd","age","dm"),
-                         expression = c("%in%NA"),
-                         event = "initial_visit_arm_1",
-                         dic = datos_redcap$dictionary,
-                         data = datos_redcap$data)
+example <- rd_query(variables="age",
+                    expression="(>70 & <80) | %in%NA",
+                    event="baseline_visit_arm_1",
+                    dic=covican_transformed$dictionary,
+                    data=covican_transformed$data)
+
+# Printing results
+example$results
 
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
-exemple <- rd_query(variables = c("copd"),
-                         expression = c("%in%NA"),
-                         dic = datos_redcap$dictionary,
-                         data = datos_redcap$data)
+example <- rd_query(variables = c("copd","age","dm"),
+                    expression = c("%in%NA"),
+                    event = "baseline_visit_arm_1",
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data)
 
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-exemple <- rd_query(variables = c("copd"),
-                         expression = c("%in%NA"),
-                         negate = TRUE,
-                         event = "initial_visit_arm_1",
-                         dic = datos_redcap$dictionary,
-                         data = datos_redcap$data)
+# Printing results
+example$results
 
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-exemple2 <- rd_query(variables = c("age"),
-                         expression = c("%in%NA"),
-                         event = "initial_visit_arm_1",
-                         dic = datos_redcap$dictionary,
-                         data=datos_redcap$data,
-                         addTo = example)
+## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
+example <- rd_query(variables = c("copd"),
+                    expression = c("%in%NA"),
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data)
+
+# Printing results
+example$results
+
+## ----echo=TRUE, message=FALSE, warning=FALSE, comment=NA----------------------
+example<- rd_query(variables = c("copd"),
+                   variables_names = c("Chronic obstructive pulmonary disease (Yes/No)"),
+                   expression = c("%in%NA"),
+                   query_name = c("COPD is a missing value."),
+                   instrument = c("Admission"),
+                   event = "baseline_visit_arm_1",
+                   dic = covican_transformed$dictionary,
+                   data = covican_transformed$data)
+
+## ----echo=FALSE, message=FALSE, warning=FALSE, comment=NA---------------------
+kable(example$queries[1,]) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra::kable_styling()
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 example <- rd_query(variables = c("copd"),
-                         expression = c("%in%NA"),
-                         event = "initial_visit_arm_1",
-                         dic = datos_redcap$dictionary,
-                         data = datos_redcap$data,
-                         silent = TRUE)
+                    expression = c("%in%NA"),
+                    negate = TRUE,
+                    event = "baseline_visit_arm_1",
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data)
+
+# Printing results
+example$results
+
+## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
+example2 <- rd_query(variables = c("age"),
+                     expression = c("%in%NA"),
+                     event = "baseline_visit_arm_1",
+                     dic = covican_transformed$dictionary,
+                     data=covican_transformed$data,
+                     addTo = example)
+
+# Printing results
+example2$results
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 example <- rd_query(variables = c("copd", "age"),
-                         expression = c("%in%NA", "<20"),
-                         event = "initial_visit_arm_1",
-                         dic = datos_redcap$dictionary,
-                         data = datos_redcap$data,
-                         report_title = "Missing COPD values in the baseline event")
+                    expression = c("%in%NA", "<20"),
+                    event = "baseline_visit_arm_1",
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data,
+                    report_title = "Missing COPD values in the baseline event")
+
+# Printing results
+example$results
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 example <- rd_query(variables = c("copd", "age"),
-                         expression = c("%in%NA", "<20"),
-                         event = "initial_visit_arm_1",
-                         dic = datos_redcap$dictionary,
-                         data = datos_redcap$data,
-                         report_zeros = TRUE)
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-example <- rd_event(event = "follow_up_visit_da_arm_1",
-                    dic = datos_redcap$dictionary,
-                    data = datos_redcap$data)
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-example <- rd_event(event = "follow_up_visit_da_arm_1",
-                    filter = "screening_fail_crit==0",
-                    dic = datos_redcap$dictionary,
-                    data = datos_redcap$data)
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-example <- rd_event(event = c("initial_visit_arm_1","follow_up_visit_da_arm_1"),
-                    filter = "screening_fail_crit==0",
-                    dic = datos_redcap$dictionary,
-                    data = datos_redcap$data,
+                    expression = c("%in%NA", "<20"),
+                    event = "baseline_visit_arm_1",
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data,
                     report_zeros = TRUE)
 
-## ----message=FALSE, warning=FALSE, include=FALSE------------------------------
-queries_nuevas <- example[c(1:5, 10:20),] # We take only some of the previously created queries
-queries_nuevas[nrow(queries_nuevas)+1,] <- c("649-20",rep("abc",8)) # we create a new query
+# Printing results
+example$results
 
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-check <- check_queries(old = example, new = queries_nuevas)
+example <- rd_event(event = "follow_up_visit_da_arm_1",
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data)
+
+# Print results
+example$results
+
+## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
+example <- rd_event(event = "follow_up_visit_da_arm_1",
+                    filter = "screening_fail_crit==0",
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data)
+
+# Print results
+example$results
+
+## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
+example <- rd_event(event = c("baseline_visit_arm_1","follow_up_visit_da_arm_1"),
+                    filter = "screening_fail_crit==0",
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data,
+                    report_zeros = TRUE)
+
+# Print results
+example$results
+
+## ----message=FALSE, warning=FALSE, include=FALSE------------------------------
+example <- rd_query(variables = c("copd", "age"),
+                    expression = c("%in%NA", "%in%NA"),
+                    event = "baseline_visit_arm_1",
+                    dic = covican_transformed$dictionary,
+                    data = covican_transformed$data)
+new_example <- example
+new_example$queries <- new_example$queries[c(1:5, 10:11),] # We take only some of the previously created queries
+new_example$queries[nrow(new_example$queries)+1,] <- c("100-79", "Hospital 11", "Initial visit", "Comorbidities", "copd", "-", "Chronic pulmonary disease", "The value is NA and it should not be missing", "100-79-4") # we create a new query
+
+## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
+check <- check_queries(old = example$queries, 
+                       new = new_example$queries)
+
+# Print results
+check$results
 
 ## ----echo=FALSE, message=FALSE, warning=FALSE, comment=NA---------------------
-kable(head(check)) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra::kable_styling()
+kable(head(check$queries)) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra::kable_styling()
 

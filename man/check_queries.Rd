@@ -2,30 +2,30 @@
 % Please edit documentation in R/check_queries.R
 \name{check_queries}
 \alias{check_queries}
-\title{Check modifications between two dataset of queries}
+\title{Check modifications between two report of queries}
 \usage{
 check_queries(old, new)
 }
 \arguments{
-\item{old}{Old version of the dataset of queries.}
+\item{old}{Previous version of the report of queries.}
 
-\item{new}{New version of the dataset of queries. This object will be used to determine the status of each query.}
+\item{new}{New version of the report of queries. This object will be used to determine the status of each query.}
 }
 \value{
-A data frame with a merge of all queries plus a column indicating which queries were resolved or are new comparing to the old queries dataset.
+A list composed by a data frame that combines all queries and includes a column that shows the status of the queries (new, modified, or unchanged) when compared to the previous report of queries. In addition to this data frame, it also has a summary of the total number of queries per category.
 }
 \description{
-This function compares a former dataset of queries with a new one and allows you to check which of the old queries were resolved, which are yet to be resolved and which of them are new.
+This function compares a previous report of queries with a new one and allows you to check which queries are new, which have been modified, and which remain unchanged.
 }
 \examples{
 data_old <- rd_query(variables = "copd",
                      expression = "\%in\%NA",
-                     event = "initial_visit_arm_1",
+                     event = "baseline_visit_arm_1",
                      dic = covican$dictionary,
                      data = covican$data)
-data_new <- rbind(data_old[1:5,], c("100-20",rep("abc",8)))
+data_new <- rbind(data_old$queries[1:5,], c("100-20",rep("abc",8)))
 
 # Control of queries
-check <- check_queries(old = data_old,
+check <- check_queries(old = data_old$queries,
                        new = data_new)
 }
