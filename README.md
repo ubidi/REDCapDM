@@ -1,4 +1,4 @@
-# REDCapDM
+# REDCapDM <img src='man/figures/logo.jpeg' align="right" height="139" />
 R package to perform data management of REDCap datasets in R
 
 Package: REDCapDM
