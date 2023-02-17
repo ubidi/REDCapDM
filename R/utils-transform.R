@@ -5,53 +5,68 @@
 #' Function that recalculates every calculated field if the logic can be transcribed to R. Recall that calculated fields with smart-variables in the logic or variables in other events cannot be transcribed.
 #'
 #' The function will return the dataset and dictionary with the added recalculated variables (the name of the calculated field + `_recalc`) along with a table that shows the summary of the results.
-#' @param data Dataset containing the REDCap data.
-#' @param dic Dataset containing the REDCap dictionary.
+#' @param data Data frame containing data from REDCap.
+#' @param dic Data frame  containing the dictionary read from REDCap.
+#' @param event_form Data frame  containing the correspondence of each event with each form.
 #' @importFrom rlang :=
 #'
 ############Calculated functions############
-recalculate <- function(data, dic){
+recalculate <- function(data, dic, event_form = NULL){
 
-  field_type <- choices_calculations_or_slider_labels <- field_name <- trans <- recalc <- is_equal <- trans2 <- n <- N <- text1 <- text2 <- results <- NULL
+  field_type <- choices_calculations_or_slider_labels <- field_name <- trans <- recalc <- is_equal <- trans2 <- n <- N <- text1 <- text2 <- results <- rlogic <- NULL
 
   #Calculate for each calculated field the transcribed logic and if possible to transcribe recalculate it
 
   calc <- tibble::tibble(dic) %>%
     dplyr::filter(field_type == "calc") %>%
     dplyr::mutate(
-      trans = purrr::map_chr(choices_calculations_or_slider_labels, function(x) {
-        rlogic <- try(rd_rlogic(x, data), silent = TRUE)
-
-        if (!inherits(rlogic, "try-error")) {
-          rlogic
-        } else{
-          NA
-        }
-
-      }),
-      calc = purrr::map2(field_name, trans, function(x, y) {
-        if (!is.na(y)) {
+      calc = purrr::map(field_name, function(x) {
           val <- data[, x]
           if(is.numeric(val)){
             as.numeric(val)
+          }else{
+            val
           }
+      }),
+      rlogic = purrr::map2(choices_calculations_or_slider_labels, field_name, function(x, y) {
+        rlogic <- try(rd_rlogic(data = data, dic = dic, event_form = event_form, logic = x, var = y), silent = TRUE)
+        if (!inherits(rlogic, "try-error")) {
+          rlogic
         } else{
+          NULL
+        }
+      }),
+      trans = purrr::map_chr(rlogic, function(x){
+        if(!is.null(x)){
+          x$rlogic
+        }else{
+          NA
+        }
+        }),
+      recalc = purrr::map(rlogic, function(x){
+        if(!is.null(x)){
+          x$eval
+        }else{
           NA
         }
       }),
-      recalc = purrr::map(trans, function(x) {
-        if (!is.na(x)) {
-          val <- eval(parse(text = x))
-          if(is.numeric(val)){
-            as.numeric(val)
-          }
-        } else{
+      calc = purrr::map2(trans, calc, function(x, y){
+        if(!is.na(x)){
+          y
+        }else{
           NA
         }
       }),
-      is_equal = purrr::map2_lgl(calc, recalc, identical),
+      is_equal = purrr::map2_lgl(calc, recalc, function(x, y){
+        if(is.numeric(x) & is.numeric(y)){
+          identical(round(x, 3), round(y, 3))
+        }else{
+          identical(x, y)
+        }
+      }),
       is_equal = ifelse(is.na(trans), NA, is_equal)
-    )
+    ) %>%
+    dplyr::select(-rlogic)
 
 
   #Add this recalculated variables to data and dictionary and return both datasets
@@ -114,17 +129,19 @@ recalculate <- function(data, dic){
 
 ############Checkbox functions############
 
-#' Transformation of checkboxes in case of depending on a gatekeeping question
+#' Transformation of checkboxes in case of having a branching logic
 #'
 #' @description
-#' Inspects all the checkboxes of the study and looks if there is a question door linked to them (a branching logic evaluating another variable). If there is one, when this variable is missing it directly inputs a missing to the checkbox. If a gatekeeper question variable cannot be found or the logic in the branching logic cannot be transcribed because of the presence of some smart variables, the variable is added in the list of the reviewable ones that will be printed.
+#' Inspects all the checkboxes of the study and looks if there is a branching logic. If there is one, when the logic of the branching logic is missing it directly inputs a missing to the checkbox. If checkbox_na is TRUE additionally it will put a missing when the branching logic isn't satisfied and not only when the logic is missing. If a branching logic cannot be found or the logic cannot be transcribed because of the presence of some smart variables, the variable is added in the list of the reviewable ones that will be printed.
 #'
 #' The function will return the dataset with the transformed checkboxes along with a table that shows a summary of the results.
-#' @param data Dataset containing the REDCap data.
-#' @param dic Dataset containing the REDCap dictionary.
+#' @param data Data frame containing data from REDCap.
+#' @param dic Data frame  containing the dictionary read from REDCap.
+#' @param event_form Data frame  containing the correspondence of each event with each form.
 #' @param checkbox_labels Character vector with the names that will have the two options of every checkbox variable. Default is `c('No', 'Yes')`.
+#' @param checkbox_na Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (meaning that some of the variables specified in it are missing) or also when the branching logic isn't satisfied (true).
 
-transform_checkboxes <- function(data, dic, checkbox_labels = c("No", "Yes")){
+transform_checkboxes <- function(data, dic, event_form, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE){
 
   vars <- dic$field_name[dic$field_type=="checkbox"]
   results <- results1 <- results2 <- NULL
@@ -147,13 +164,25 @@ transform_checkboxes <- function(data, dic, checkbox_labels = c("No", "Yes")){
 
         #Translate the REDCap logic to r language using rd_rlogic function
 
-        rlogic <- try(rd_rlogic(logic,data), silent = TRUE)
+        rlogic <- try(rd_rlogic(data = data, dic = dic, event_form = event_form, logic = logic, var = vars[i]), silent = TRUE)
 
         if(!inherits(rlogic, "try-error")){
 
-          for(j in 1:length(vars_data)){
-            data[,vars_data[j]] <- ifelse(eval(parse(text=rlogic)),as.character(data[,vars_data[j]]),NA)
+          #Evaluate the logic
+          rlogic_eval <- rlogic$eval
+
+          #It will be missing when the logic isn't satisfied
+          if(checkbox_na){
+            for(j in 1:length(vars_data)){
+              data[,vars_data[j]] <- ifelse(rlogic_eval,as.character(data[,vars_data[j]]),NA)
+            }
+          #It will be missing when the logic is missing
+          }else{
+            for(j in 1:length(vars_data)){
+              data[,vars_data[j]] <- ifelse(!is.na(rlogic_eval),as.character(data[,vars_data[j]]),NA)
+            }
           }
+
 
         }else{
           review2 <- c(review2, vars[i])
@@ -293,16 +322,16 @@ transform_name <- function(var_check,name,labels){
 #' Creation of a data frame with variables of all the forms of a specified event
 #' @description
 #' Function that given the data, the dictionary and the mapping between forms and events it creates a dataset with the variables of all the forms that are in this event. It can be chosen to return only the data from the specified event.
-#' @param data Preprocessed data.
-#' @param dic Preprocessed dictionary.
-#' @param event Downloaded instrument-event mapping from REDCap.
+#' @param data Data frame containing data from REDCap.
+#' @param dic Data frame  containing the dictionary read from REDCap.
+#' @param event_form Data frame  containing the correspondence of each event with each form.
 #' @param which Specify an event if only data for the desired event is wanted.
-split_event <- function(data,dic,event,which=NULL){
+split_event <- function(data,dic,event_form,which=NULL){
 
   form <- unique_event_name <- field_type <- field_name <- branching_logic_show_field_only_if <- filtre_events <- no_filtre_events <- redcap_event_name <- vars_clau <- logic <- l <- events <- vars <- NULL
 
   #We create event-variable correspondence::
-  var_event <- event %>%
+  var_event <- event_form %>%
     dplyr::select(form_name=form,redcap_event_name=unique_event_name) %>%
     dplyr::right_join(dic[,c("form_name","field_name","field_type","branching_logic_show_field_only_if")],by="form_name") %>%
     #Remove variables that we don't need (type descriptive and borrar/complete)
@@ -385,13 +414,13 @@ split_event <- function(data,dic,event,which=NULL){
 #' Creation of a data frame with variables of a specified form
 #' @description
 #' Function that given the data, the dictionary and the mapping between forms and events it creates a dataset with the variables that are in this form for all events. It can be chosen to return only the data from the specified form.
-#' @param data Preprocessed data.
-#' @param dic Preprocessed dictionary.
-#' @param event Downloaded instrument-event mapping from REDCap.
+#' @param data Data frame containing data from REDCap.
+#' @param dic Data frame  containing the dictionary read from REDCap.
+#' @param event_form Data frame  containing the correspondence of each event with each form.
 #' @param which Specify a form if only data for the desired form is wanted.
 #' @param wide If the dataset needs to be in a wide format or not (long).
 
-split_form <- function(data, dic, event, which = NULL, wide=FALSE){
+split_form <- function(data, dic, event_form, which = NULL, wide=FALSE){
 
   field_type <- field_name <- vars <- events <- vars_esp <- df <- NULL
 
@@ -422,7 +451,7 @@ split_form <- function(data, dic, event, which = NULL, wide=FALSE){
   form <- unique(dic$form_name)
 
   ndata <- tibble::tibble("form"=form) %>%
-    dplyr::mutate(events = purrr::map(form, ~event$unique_event_name[event$form == .x]),
+    dplyr::mutate(events = purrr::map(form, ~event_form$unique_event_name[event_form$form == .x]),
            vars = purrr::map(form, ~dic$field_name[dic$form_name == .x]),
            #Add to vars the basic REDCap variables not found in the dictionary:
            vars = purrr::map(vars, ~unique(c(basic_redcap_vars, .x)))
@@ -479,8 +508,8 @@ to_factor <- function(data, exclude = NULL){
   data$redcap_event_name.factor <- NULL
   data$redcap_data_access_group.factor <- NULL
 
-  factors <- names(data)[grep(".factor$",names(data))]
-  factors <- gsub(".factor$","",factors)
+  factors <- names(data)[grep("\\.factor$",names(data))]
+  factors <- gsub("\\.factor$","",factors)
 
   #Exclude those variables that we don't want to convert to factors
   factors <- factors[!factors %in% exclude]
@@ -496,6 +525,40 @@ to_factor <- function(data, exclude = NULL){
       tibble::add_column("redcap_data_access_group.factor" = keep_factors$redcap_data_access_group.factor, .after = "redcap_data_access_group")
   }else{
     data
+  }
+
+}
+
+#' Fill rows with the values in one event
+#' @description
+#' Function that with one particular variable and event it fills all the rows in the data with the value in that particular event
+#' @param which_event String with the name of the event
+#' @param which_var String with the name of the variable
+#' @param data Dataset containing the REDCap data.
+
+fill_data <- function(which_event, which_var, data){
+
+  if(which_event %in% data$redcap_event_name){
+
+    fill_values <- data %>%
+      dplyr::select("record_id", "redcap_event_name", "var" = "which_var") %>%
+      dplyr::group_by(.data$record_id) %>%
+      dplyr::mutate(
+             var = ifelse(.data$redcap_event_name != which_event, NA, .data$var),
+             #Only the first value if the event is repeated
+             var = stats::na.exclude(unique(.data$var))[1]
+      ) %>%
+      tidyr::fill(.data$var, .direction = "downup") %>%
+      dplyr::pull(.data$var)
+
+    data[,which_var] <- fill_values
+
+    data
+
+  }else{
+
+    stop("The logic can't be evaluated after the translation")
+
   }
 
 }

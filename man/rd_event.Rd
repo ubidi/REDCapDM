@@ -5,26 +5,29 @@
 \title{Identification of missing event/s}
 \usage{
 rd_event(
+  ...,
+  data = NULL,
+  dic = NULL,
   event,
   filter = NA,
   query_name = NA,
-  dic,
-  data,
   addTo = NA,
   report_title = NA,
   report_zeros = FALSE
 )
 }
 \arguments{
+\item{...}{List containing the data and the dictionary and the event if it's needed. Can be the output of the function `redcap_data`.}
+
+\item{data}{Data frame containing data from REDCap. If the list is specified this argument is not needed.}
+
+\item{dic}{Data frame containing the dictionary read from REDCap. If the list is specified this argument is not needed.}
+
 \item{event}{Vector with the REDCap's events names to be analyzed.}
 
 \item{filter}{A filter to apply to the dataset. This argument can be used to identify the missing events on a subgroup of the dataset.}
 
 \item{query_name}{Description of the query. It can be defined as the same one for all events or you can define one for each event By default, the function will define the description as `The event [event] is missing' for each event`.}
-
-\item{dic}{R object corresponding to the dictionary of the dataset.}
-
-\item{data}{R object corresponding to the dataset.}
 
 \item{addTo}{Data frame corresponding to a prior report of queries to which you can add the new data frame of queries. By default, the function will always generate a new data frame without taking into account former reports.}
 
@@ -40,8 +43,7 @@ When working with a longitudinal REDCap project, the exported data has a structu
 This function allows you to point out which record identifiers do not have information of a determined event.
 }
 \examples{
-example <- rd_event(event = "follow_up_visit_da_arm_1",
-                    dic = covican$dictionary,
-                    data = covican$data)
+example <- rd_event(covican,
+                    event = "follow_up_visit_da_arm_1")
 example
 }

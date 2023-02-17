@@ -4,19 +4,27 @@
 \alias{redcap_data}
 \title{Read REDCap data}
 \usage{
-redcap_data(data_path = NA, dic_path = NA, uri = NA, token = NA)
+redcap_data(
+  data_path = NA,
+  dic_path = NA,
+  event_path = NA,
+  uri = NA,
+  token = NA
+)
 }
 \arguments{
 \item{data_path}{Character string with the pathname of the R file to read the dataset from.}
 
 \item{dic_path}{Character string with the pathname of the dictionary.}
 
+\item{event_path}{Character string with the pathname of the file with the correspondence between each event and each form (it can be downloaded in `Designate Instruments for My Events` inside the `Project Setup` section of REDCap)}
+
 \item{uri}{The URI (uniform resource identifier) of the REDCap project.}
 
 \item{token}{Character vector with the code of the token.}
 }
 \value{
-List with the dataset and the dictionary of the corresponding REDCap project.
+List with the dataset and the dictionary of the corresponding REDCap project. If the event_path is specified it will also contain a third element with the correspondence of the events & forms of the project.
 }
 \description{
 This function allows users to read datasets from a REDCap project, through exported data or an API connection, into R for analysis.

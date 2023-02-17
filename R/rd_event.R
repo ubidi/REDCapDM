@@ -3,27 +3,40 @@
 #' When working with a longitudinal REDCap project, the exported data has a structure where each row represents one event per record. However, by default, REDCap will not export events that do not have information.
 #' This function allows you to point out which record identifiers do not have information of a determined event.
 #'
+#' @param ... List containing the data and the dictionary and the event if it's needed. Can be the output of the function `redcap_data`.
+#' @param data Data frame containing data from REDCap. If the list is specified this argument is not needed.
+#' @param dic Data frame containing the dictionary read from REDCap. If the list is specified this argument is not needed.
 #' @param event Vector with the REDCap's events names to be analyzed.
 #' @param filter A filter to apply to the dataset. This argument can be used to identify the missing events on a subgroup of the dataset.
 #' @param query_name Description of the query. It can be defined as the same one for all events or you can define one for each event By default, the function will define the description as `The event [event] is missing' for each event`.
-#' @param dic R object corresponding to the dictionary of the dataset.
-#' @param data R object corresponding to the dataset.
 #' @param addTo Data frame corresponding to a prior report of queries to which you can add the new data frame of queries. By default, the function will always generate a new data frame without taking into account former reports.
 #' @param report_title Character string with the report's title.
 #' @param report_zeros Logical. If `TRUE`, it returns a report including events with zero queries.
 #' @return A dataframe with 9 columns meant to help the user identify each missing event and a table with the total of queries per variable.
 #' @examples
-#' example <- rd_event(event = "follow_up_visit_da_arm_1",
-#'                     dic = covican$dictionary,
-#'                     data = covican$data)
+#' example <- rd_event(covican,
+#'                     event = "follow_up_visit_da_arm_1")
 #' example
 #' @export
 
-rd_event <- function(event, filter = NA, query_name = NA, dic, data, addTo = NA, report_title = NA, report_zeros = FALSE)
+rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_name = NA, addTo = NA, report_title = NA, report_zeros = FALSE)
   {
     Code <- NULL
     Identifier <- NULL
     var <- NULL
+
+    # If the entire list resulting from the 'redcap_data' function is used
+    project <- c(...)
+    if(!is.null(project)){
+      if(!is.null(data)){
+        warning("Data has been specified twice so the function will not use the information in the data argument.")
+      }
+      if(!is.null(dic)){
+        warning("Dictionary has been specified twice so the function will not use the information in the dic argument.")
+      }
+      data <- project$data
+      dic <- project$dic
+    }
 
     # Making sure that the object data is a data.frame
     data <- as.data.frame(data)
@@ -39,9 +52,9 @@ rd_event <- function(event, filter = NA, query_name = NA, dic, data, addTo = NA,
 
     # Filtering the data using the information of the argument 'filter'
     if (!filter %in% NA) {
-      command <- paste0("data0", "<-subset(data,", filter, ")")
+      command <- paste0("data0", "<-dplyr::filter(data,", filter, ")")
       eval(parse(text = command))
-      data0 <- subset(data, data$record_id %in% data0$record_id)
+      data0 <- dplyr::filter(data, data$record_id %in% data0$record_id)
       data <- data0
       if (nrow(data0)==0) {
         stop("The filter applied results in no observations, please change it.", call. = FALSE)
@@ -66,17 +79,17 @@ rd_event <- function(event, filter = NA, query_name = NA, dic, data, addTo = NA,
 
         if (any(names(data) == "redcap_event_name.factor")) {
           if (all(event %in% data$redcap_event_name.factor)) {
-            data2 <- subset(data, data$redcap_event_name.factor %in% event[k])
+            data2 <- dplyr::filter(data, data$redcap_event_name.factor %in% event[k])
           }
         }
 
         if (all(event %in% data$redcap_event_name)) {
-          data2 <- subset(data, data$redcap_event_name %in% event[k])
+          data2 <- dplyr::filter(data, data$redcap_event_name %in% event[k])
         }
 
 
         # Identification of the record_ids that do not present the events specified
-        raw <- subset(data0, !data0$record_id%in%data2$record_id)
+        raw <- dplyr::filter(data0, !data0$record_id%in%data2$record_id)
         raw <- raw %>% dplyr::slice(rep(1:dplyr::n(), each = length(event[k])))
 
         # Identification of queries, using the structure built before
@@ -146,7 +159,7 @@ rd_event <- function(event, filter = NA, query_name = NA, dic, data, addTo = NA,
         queries$Identifier <- as.numeric(queries$Identifier)
         queries <- queries[order(queries$Identifier), ]
       }
-      queries <- unique(subset(queries, select = -Code))
+      queries <- unique(queries %>% dplyr::select(-"Code"))
       queries <- data.frame(queries %>% dplyr::group_by(Identifier) %>% dplyr::mutate(cod = 1:dplyr::n()))
       queries$Code <- paste0(as.character(queries$Identifier), "-", queries$cod)
       queries <- queries[, names(queries)[which(!names(queries) %in% c("cod"))]]

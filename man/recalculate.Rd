@@ -4,12 +4,14 @@
 \alias{recalculate}
 \title{Recalculate REDCap calculated fields}
 \usage{
-recalculate(data, dic)
+recalculate(data, dic, event_form = NULL)
 }
 \arguments{
-\item{data}{Dataset containing the REDCap data.}
+\item{data}{Data frame containing data from REDCap.}
 
-\item{dic}{Dataset containing the REDCap dictionary.}
+\item{dic}{Data frame  containing the dictionary read from REDCap.}
+
+\item{event_form}{Data frame  containing the correspondence of each event with each form.}
 }
 \description{
 Function that recalculates every calculated field if the logic can be transcribed to R. Recall that calculated fields with smart-variables in the logic or variables in other events cannot be transcribed.

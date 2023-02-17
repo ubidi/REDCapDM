@@ -5,10 +5,13 @@
 \title{Transformation of the raw data}
 \usage{
 rd_transform(
-  data,
-  dic,
+  ...,
+  data = NULL,
+  dic = NULL,
+  event_form = NULL,
   event_path = NULL,
   checkbox_labels = c("No", "Yes"),
+  checkbox_na = FALSE,
   exclude_to_factor = NULL,
   keep_labels = FALSE,
   delete_vars = "_complete",
@@ -19,13 +22,19 @@ rd_transform(
 )
 }
 \arguments{
-\item{data}{Database containing data from REDCap.}
+\item{...}{List containing the data and the dictionary and the event_form if it's needed. Can be the output of the function `redcap_data`.}
 
-\item{dic}{Database containing the dictionary read from REDCap.}
+\item{data}{Data frame containing data from REDCap. If the list is specified this argument is not needed.}
 
-\item{event_path}{Character string with the path name of the instrument mapping (can be downloaded in the `Designate Instruments for My Events` section of REDCap).}
+\item{dic}{Data frame  containing the dictionary read from REDCap. If the list is specified this argument is not needed.}
+
+\item{event_form}{Data frame  containing the correspondence of each event with each form. If the list is specified this argument is not needed.}
+
+\item{event_path}{Character string with the pathname of the file with the correspondence between each event and each form (it can be downloaded in `Designate Instruments for My Events` inside the `Project Setup` section of REDCap).}
 
 \item{checkbox_labels}{Character vector with the names that will have the two options of every checkbox variable. Default is `c('No', 'Yes')`.}
+
+\item{checkbox_na}{Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (meaning that some of the variables specified in it are missing) or also when the branching logic isn't satisfied (true).}
 
 \item{exclude_to_factor}{Character vector with the names of the variables that do not have to be transformed to factors.}
 
@@ -48,12 +57,10 @@ List with the transformed dataset, dictionary and the results
 Function that transforms the raw data from REDCap read by the function `redcap_data`. It returns the transformed data and dictionary along with the summary of the results of each step.
 }
 \examples{
-rd_transform(data = covican$data,
-             dic = covican$dictionary)
+rd_transform(covican)
 
 # For customization of checkbox labels
-rd_transform(data = covican$data,
-             dic = covican$dictionary,
+rd_transform(covican,
              checkbox_labels = c("Not present", "Present"))
 
 }

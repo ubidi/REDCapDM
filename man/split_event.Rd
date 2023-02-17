@@ -4,14 +4,14 @@
 \alias{split_event}
 \title{Creation of a data frame with variables of all the forms of a specified event}
 \usage{
-split_event(data, dic, event, which = NULL)
+split_event(data, dic, event_form, which = NULL)
 }
 \arguments{
-\item{data}{Preprocessed data.}
+\item{data}{Data frame containing data from REDCap.}
 
-\item{dic}{Preprocessed dictionary.}
+\item{dic}{Data frame  containing the dictionary read from REDCap.}
 
-\item{event}{Downloaded instrument-event mapping from REDCap.}
+\item{event_form}{Data frame  containing the correspondence of each event with each form.}
 
 \item{which}{Specify an event if only data for the desired event is wanted.}
 }

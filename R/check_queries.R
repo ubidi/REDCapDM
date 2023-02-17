@@ -5,11 +5,10 @@
 #' @param new New version of the report of queries. This object will be used to determine the status of each query.
 #' @return A list composed by a data frame that combines all queries and includes a column that shows the status of the queries (new, modified, or unchanged) when compared to the previous report of queries. In addition to this data frame, it also has a summary of the total number of queries per category.
 #' @examples
-#' data_old <- rd_query(variables = "copd",
+#' data_old <- rd_query(covican,
+#'                      variables = "copd",
 #'                      expression = "%in%NA",
-#'                      event = "baseline_visit_arm_1",
-#'                      dic = covican$dictionary,
-#'                      data = covican$data)
+#'                      event = "baseline_visit_arm_1")
 #' data_new <- rbind(data_old$queries[1:5,], c("100-20",rep("abc",8)))
 #'
 #' # Control of queries

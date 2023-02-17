@@ -5,6 +5,9 @@
 \title{Identification of queries}
 \usage{
 rd_query(
+  ...,
+  data = NULL,
+  dic = NULL,
   variables = NA,
   expression = NA,
   negate = FALSE,
@@ -12,15 +15,20 @@ rd_query(
   query_name = NA,
   instrument = NA,
   event = NA,
-  dic,
-  data,
   filter = NA,
   addTo = NA,
   report_title = NA,
-  report_zeros = FALSE
+  report_zeros = FALSE,
+  by_dag = FALSE
 )
 }
 \arguments{
+\item{...}{List containing the data and the dictionary and the event if it's needed. Can be the output of the function `redcap_data`.}
+
+\item{data}{Data frame containing data from REDCap. If the list is specified this argument is not needed.}
+
+\item{dic}{Data frame containing the dictionary read from REDCap. If the list is specified this argument is not needed.}
+
 \item{variables}{Vector with variables names from the database that will be checked. If this argument alongside with the argument `expression` are unspecified, this function will look for abnormal values using the minimum and maximum of each variable in the dataset (information contained in the dictionary).}
 
 \item{expression}{Expression that will be applied to the chosen variables, for example, "<170". If this argument is unspecified, this function will look for abnormal values using the minimum and maximum of each variable in the dataset (information contained in the dictionary).}
@@ -35,10 +43,6 @@ rd_query(
 
 \item{event}{REDCap's event name to be analyzed. If your REDCap project has events, you should use this argument in order to name the event to which the defined variables belong.}
 
-\item{dic}{R object corresponding to the dictionary of the dataset.}
-
-\item{data}{R object corresponding to the dataset.}
-
 \item{filter}{A filter to apply to the dataset. This argument can be used to, for example, apply the branching logic of a determined variable.}
 
 \item{addTo}{Data frame corresponding to a prior report of queries to which you can add the new data frame of queries. By default, the function will always generate a new data frame without taking into account former reports.}
@@ -46,6 +50,8 @@ rd_query(
 \item{report_title}{Character string with the report's title.}
 
 \item{report_zeros}{Logical. If `TRUE`, it returns a report including variables with zero queries.}
+
+\item{by_dag}{Logical. If `TRUE`, both elements of the output will be grouped by the data access groups (DAGs) of the REDCap project.}
 }
 \value{
 A list with a data frame with 9 columns meant to help the user identify each query and a table with the total of queries per variable.
@@ -56,27 +62,24 @@ It can be used to identify missing values or values that fall outside the lower 
 }
 \examples{
 # Missings
-example <- rd_query(variables = c("copd", "age"),
+example <- rd_query(covican,
+                    variables = c("copd", "age"),
                     expression = c("\%in\%NA", "\%in\%NA"),
-                    event = "baseline_visit_arm_1",
-                    dic = covican$dictionary,
-                    data = covican$data)
+                    event = "baseline_visit_arm_1")
 example
 
 # Expression
-example <- rd_query(variables="age",
+example <- rd_query(covican,
+                    variables="age",
                     expression=">20",
-                    event="baseline_visit_arm_1",
-                    dic=covican$dictionary,
-                    data=covican$data)
+                    event="baseline_visit_arm_1")
 example
 
 # Using a filter
-example <- rd_query(variables = "potassium",
+example <- rd_query(covican,
+                    variables = "potassium",
                     expression = "\%in\%NA",
                     event = "baseline_visit_arm_1",
-                    dic = covican$dictionary,
-                    data = covican$data,
                     filter = "available_analytics=='1'")
 example
 }

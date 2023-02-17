@@ -18,11 +18,10 @@ A list composed by a data frame that combines all queries and includes a column 
 This function compares a previous report of queries with a new one and allows you to check which queries are new, which have been modified, and which remain unchanged.
 }
 \examples{
-data_old <- rd_query(variables = "copd",
+data_old <- rd_query(covican,
+                     variables = "copd",
                      expression = "\%in\%NA",
-                     event = "baseline_visit_arm_1",
-                     dic = covican$dictionary,
-                     data = covican$data)
+                     event = "baseline_visit_arm_1")
 data_new <- rbind(data_old$queries[1:5,], c("100-20",rep("abc",8)))
 
 # Control of queries
