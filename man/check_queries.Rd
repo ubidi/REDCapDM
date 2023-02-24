@@ -4,12 +4,14 @@
 \alias{check_queries}
 \title{Check modifications between two report of queries}
 \usage{
-check_queries(old, new)
+check_queries(old, new, report_title = NULL)
 }
 \arguments{
 \item{old}{Previous version of the report of queries.}
 
 \item{new}{New version of the report of queries. This object will be used to determine the status of each query.}
+
+\item{report_title}{Character string with the report's title.}
 }
 \value{
 A list composed by a data frame that combines all queries and includes a column that shows the status of the queries (new, modified, or unchanged) when compared to the previous report of queries. In addition to this data frame, it also has a summary of the total number of queries per category.

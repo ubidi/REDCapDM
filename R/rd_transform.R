@@ -26,12 +26,8 @@
 #'
 #' @export
 
-rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, event_path = NULL, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE, exclude_to_factor = NULL, keep_labels = FALSE, delete_vars = "_complete", final_format = "raw", which_event = NULL, which_form = NULL, wide = NULL){
+rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, event_path = NULL, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE, exclude_to_factor = NULL, keep_labels = FALSE, delete_vars = c("_complete", "_timestamp"), final_format = "raw", which_event = NULL, which_form = NULL, wide = NULL){
 
-  form <- NULL
-  record_id <- NULL
-  redcap_event_name.factor <- NULL
-  field_name <- NULL
   results <- NULL
   ind <- 1
 
@@ -61,12 +57,16 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, event_
   }
 
 
+  #Check if the project is longitudinal (has more than one event) or not:
+  longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
+
   if(final_format == "by_event" & is.null(event_form)){
     stop("To split the data by event the event_form has to be provided", call. = FALSE)
   }
 
-  if(final_format == "by_form" & is.null(event_form)){
-    stop("To split the data by form the event_form has to be provided", call. = FALSE)
+  #If the project is not longitudinal 'by_form' can be used without event_form:
+  if(final_format == "by_form" & is.null(event_form) & longitudinal){
+    stop("To split the data by form the event_form has to be provided in a longitudinal project", call. = FALSE)
   }
 
   if(!is.null(which_event) & final_format != "by_event"){
@@ -95,8 +95,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, event_
   }
 
   #If the project is longitudinal and the event hasn't been specified:
-  if(length(unique(data$redcap_event_name)) > 1 & is.null(event_form)){
-
+  if(longitudinal & is.null(event_form)){
     warning("The project contains more than one event. For a complete transformation is recommended to include the event-form correspondence")
   }
 
@@ -118,7 +117,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, event_
   ind <- ind + 1
 
   #If the project is longitudinal and the event hasn't been specified no recalculation was possible
-  if(length(unique(data$redcap_event_name)) > 1 & is.null(event_form)){
+  if(longitudinal & is.null(event_form)){
 
     results <- c(results, "\nNo recalculation was possible as the project has more than one event and the event-form correspondence has not been specified\n")
 
@@ -179,7 +178,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, event_
     dic <- data_dic$dic
 
     #If the project is longitudinal and the event_form hasn't been specified no branching logic evaluation was possible
-    if(length(unique(data$redcap_event_name)) > 1 & is.null(event_form)){
+    if(longitudinal & is.null(event_form)){
       results <- c(results, "\nBranching logic evaluation was not possible as the project has more than one event and the event-form correspondence has not been specified\n")
     }
 
@@ -238,6 +237,9 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, event_
       if(delete_vars[i] == "_complete"){
         data <- data %>%
           dplyr::select(!tidyselect::ends_with("_complete"))
+      }else if(delete_vars[i] == "_timestamp"){
+        data <- data %>%
+          dplyr::select(!tidyselect::ends_with("_timestamp"))
       }else{
         data <- data %>%
           dplyr::select(!tidyselect::contains(delete_vars[i]))
@@ -248,23 +250,30 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, event_
   }
 
   #Arrange our dataset by record_id and event (will keep the same order of events as in redcap)
-  data <- data %>%
-    dplyr::arrange(record_id, redcap_event_name.factor)
+  if(longitudinal){
+    data <- data %>%
+      dplyr::arrange(.data$record_id, .data$redcap_event_name.factor)
+  }
 
-  if(!is.null(event_form)){
 
-    var_noevent <- dic$field_name[! dic$form_name %in% event_form$form]
+  #If an event_form is specified or if the project has only one event and by_form has been specified
+  if(!is.null(event_form) | (final_format == "by_form" & !longitudinal)){
 
-    if(length(var_noevent) > 0){
+    if(!is.null(event_form)){
+      var_noevent <- dic$field_name[! dic$form_name %in% event_form$form]
 
-      results <- c(results, stringr::str_glue("\n\n{ind}. Erasing variables from forms that are not linked to any event"))
-      ind <- ind + 1
+      if(length(var_noevent) > 0){
 
-      var_noevent <- var_noevent[var_noevent %in% names(data)]
-      data <- data %>%
-        dplyr::select(-var_noevent)
-      dic <- dic %>%
-        dplyr::filter(! field_name %in% var_noevent)
+        results <- c(results, stringr::str_glue("\n\n{ind}. Erasing variables from forms that are not linked to any event"))
+        ind <- ind + 1
+
+        var_noevent <- var_noevent[var_noevent %in% names(data)]
+        data <- data %>%
+          dplyr::select(-var_noevent)
+        dic <- dic %>%
+          dplyr::filter(! .data$field_name %in% var_noevent)
+      }
+
     }
 
     #Final arrangment
@@ -295,12 +304,18 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, event_
 
       if(is.null(which_form)){
 
-        data <- split_form(data, dic, event_form, which = NULL, wide)
+        if(longitudinal){
+          data <- split_form(data, dic, event_form, which = NULL, wide)
+        }else{
+          data <- split_form(data, dic, which = NULL, wide)
+        }
 
       }else{
-
-        data <- split_form(data, dic, event_form, which=which_form, wide)
-
+        if(longitudinal){
+          data <- split_form(data, dic, event_form, which=which_form, wide)
+        }else{
+          data <- split_form(data, dic, which=which_form, wide)
+        }
       }
 
     }

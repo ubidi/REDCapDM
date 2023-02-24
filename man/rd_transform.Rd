@@ -14,7 +14,7 @@ rd_transform(
   checkbox_na = FALSE,
   exclude_to_factor = NULL,
   keep_labels = FALSE,
-  delete_vars = "_complete",
+  delete_vars = c("_complete", "_timestamp"),
   final_format = "raw",
   which_event = NULL,
   which_form = NULL,

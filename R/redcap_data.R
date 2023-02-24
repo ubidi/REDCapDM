@@ -41,12 +41,16 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     if (names(data)[1]!="record_id") {
       names(data)[1] <- "record_id"
     }
-    dic <- utils::read.csv(paste(dic_path), encoding="UTF-8")
+    dic <- utils::read.csv(paste(dic_path), encoding="UTF-8", header = FALSE)
+    names(dic) <- dic[1,]
+    dic <- dic[-1,]
     names(dic) <- janitor::make_clean_names(names(dic))
     names(dic)[1] <- "field_name"
     if (dic[1,1]!="record_id") {
       dic[1,1] <- "record_id"
     }
+
+    longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
     #Read event file
     if(!is.na(event_path)){
@@ -59,7 +63,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     }else{
 
       #If no event is specified and the project is longitudinal
-      if(length(unique(data$redcap_event_name)) > 1){
+      if(longitudinal){
         warning("The project contains more than one event. You might want to load the event-form correspondence using the argument event_path.")
       }
 
@@ -69,38 +73,55 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
 
   }
 
-  if(all(!c(token, uri)%in%NA)&all(c(data_path,dic_path)%in%NA)){
-    data_api <- REDCapR::redcap_read_oneshot(redcap_uri=uri, token=token, verbose = FALSE)$data
+  if(all(!c(token, uri) %in% NA) & all(c(data_path, dic_path) %in% NA)){
+    data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE)$data
     if (names(data_api)[1]!="record_id") {
       names(data_api)[1] <- "record_id"
     }
 
+    longitudinal <- ifelse("redcap_event_name" %in% names(data_api), TRUE, FALSE)
+
     #Read event file
     if(!is.na(event_path)){
 
-      setwd(oldwd)
-      event_form <- utils::read.csv(paste(event_path), encoding="UTF-8")
-      data_def <- list(data=data_api, dictionary=REDCapR::redcap_metadata_read(redcap_uri=uri, token=token, verbose = FALSE)$data, event_form = event_form)
+      warning("The event_path argument is not necessary as the event-form correspondence can be automatically read with the API connection")
 
+      setwd(oldwd)
+      event_form <- utils::read.csv(paste(event_path), encoding = "UTF-8")
+      data_def <- list(data=data_api, dictionary=REDCapR::redcap_metadata_read(redcap_uri = uri, token = token, verbose = FALSE)$data, event_form = event_form)
+
+    #If no event file specified the function reads it with the API (if the project is not longitudinal)
     }else{
 
-      #If no event is specified and the project is longitudinal
-      if(length(unique(data_api$redcap_event_name)) > 1){
-        warning("The project contains more than one event. You might want to load the event-form correspondence using the argument event_path", call. = FALSE)
+      if(longitudinal){
+
+        # Import dictionary of the project using the API connection
+        dic_api <- REDCapR::redcap_metadata_read(redcap_uri = uri, token = token, verbose = FALSE)$data
+
+        ## Making sure the names of both dictionaries match
+        names(dic_api)[names(dic_api) %in% c("select_choices_or_calculations", "branching_logic", "question_number")] <- c("choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "question_number_surveys_only")
+
+        # Import event file of the project using the API connection
+        event_form <- as.data.frame(REDCapR::redcap_event_instruments(redcap_uri=uri, token=token, verbose = FALSE)$data)
+
+        data_def <- list(data = data_api[, !(grepl("_complete", names(data_api)))], dictionary = dic_api, event_form = event_form)
+
+      }else{
+
+        # Import dictionary of the project using the API connection
+        dic_api <- REDCapR::redcap_metadata_read(redcap_uri = uri, token = token, verbose = FALSE)$data
+
+        ## Making sure the names of both dictionaries match
+        names(dic_api)[names(dic_api) %in% c("select_choices_or_calculations", "branching_logic", "question_number")] <- c("choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "question_number_surveys_only")
+
+        data_def <- list(data = data_api[, !(grepl("_complete", names(data_api)))], dictionary = dic_api)
+
       }
-
-      # Import dictionary of the project using the API connection
-      dic_api <- REDCapR::redcap_metadata_read(redcap_uri = uri, token = token, verbose = FALSE)$data
-
-      ## Making sure the names of both dictionaries match
-      names(dic_api)[names(dic_api) %in% c("select_choices_or_calculations", "branching_logic", "question_number")] <- c("choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "question_number_surveys_only")
-
-      data_def <- list(data = data_api[, !(grepl("_complete", names(data_api)))], dictionary = dic_api)
 
     }
 
     for (i in 1:length(data_def$data)) {
-      suppressWarnings(data_def$data[,i] <- stringr::str_conv(data_def$data[,i], "UTF-8"))
+      suppressWarnings(data_def$data[, i] <- stringr::str_conv(data_def$data[, i], "UTF-8"))
     }
     return(data_def)
   }

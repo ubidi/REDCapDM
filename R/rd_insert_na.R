@@ -45,7 +45,10 @@ rd_insert_na <- function(..., data = NULL, dic = NULL, event_form = NULL, vars, 
     stop("No data/dictionary was provided")
   }
 
-  if(is.null(event_form) & length(unique(data$redcap_event_name)) > 1){
+  #Check if the project is longitudinal (has more than one event) or not:
+  longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
+
+  if(is.null(event_form) & longitudinal){
     stop("There is more than one event in the data and the event-form correspondence hasn't been specified")
   }
 
@@ -58,7 +61,7 @@ rd_insert_na <- function(..., data = NULL, dic = NULL, event_form = NULL, vars, 
     for(i in 1:length(filter)){
 
       #For every filter & variable get the variables specified in the filter and their events (if there is more than one event)
-      if(length(unique(data$redcap_event_name)) > 1){
+      if(longitudinal){
         #First, let's get the variables in the filter:
         vars_filter <- trimws(stringr::str_split_1(filter[i], "[&|]"))
         vars_filter <- gsub("!?is.na\\(", "", vars_filter)

@@ -46,13 +46,6 @@
 
 rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = NA, negate = FALSE, variables_names = NA, query_name = NA, instrument = NA, event = NA, filter = NA, addTo = NA, report_title = NA, report_zeros = FALSE, by_dag = FALSE)
   {
-    raw <- NULL
-    Code <- NULL
-    var <- NULL
-    value_dep <- NULL
-    query_descr <- NULL
-    dag <- NULL
-
     old_options <- options()
     on.exit(options(old_options))
 
@@ -121,29 +114,29 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
     }
 
     # Warning: some of the variables present a branching logic (just for cases where they are being checked for missings)
-    if (any(gsub("___.*$","", variables[stringr::str_detect(string = gsub(" ", "", expression), pattern = c("%in%NA"))]) %in% dic[!dic$branching_logic_show_field_only_if%in%c(NA,""),"field_name"])) {
+    if (any(gsub("___.*$", "", variables[stringr::str_detect(string = gsub(" ", "", expression), pattern = c("%in%NA"))]) %in% dic[!dic$branching_logic_show_field_only_if %in% c(NA, ""), "field_name"])) {
       var_logic <- dic[!dic$branching_logic_show_field_only_if%in%c(NA,""),"field_name"]
       var_miss <- variables[stringr::str_detect(string = gsub(" ", "", expression), pattern = c("%in%NA"))]
       # Identification of the variables with a branching logic
-      vars <- var_miss[gsub("___.*$","",var_miss) %in% var_logic]
+      vars <- var_miss[gsub("___.*$", "", var_miss) %in% var_logic]
 
       if (any(stringr::str_detect(unique(dic$branching_logic_show_field_only_if), "\\(\\d\\)"))==FALSE) {
         # Future report of the variables with a branching logic
         branch <- data.frame(
-          var = dic$field_name[dic$field_name%in%gsub("___.*$","",vars)],
-          label = gsub("<.*?>", "", dic$field_label[dic$field_name%in%gsub("___.*$","",vars)]),
-          branch = dic$branching_logic_show_field_only_if[dic$field_name%in%gsub("___.*$","",vars)]
+          var = dic$field_name[dic$field_name %in% gsub("___.*$", "", vars)],
+          label = gsub("<.*?>", "", dic$field_label[dic$field_name %in% gsub("___.*$", "", vars)]),
+          branch = dic$branching_logic_show_field_only_if[dic$field_name %in% gsub("___.*$", "", vars)]
         )
 
         # Adaptation of the REDCap's branching logic to R's logic
-        branch$branch <- gsub("\\[(.+)\\((\\d+)\\)\\]","[\\1___\\2]",branch$branch)
-        branch$branch <- gsub("\\[event\\-name\\]","[redcap_event_name]", branch$branch)
-        branch$branch <- gsub("\\[user\\-dag\\-name\\]","[redcap_data_access_group]", branch$branch)
-        branch$branch <- gsub("\\[record\\-dag\\-name\\]","[redcap_data_access_group]", branch$branch)
-        branch$branch <- gsub("=","==", branch$branch)
-        branch$branch <- gsub("<>","!=", branch$branch)
-        branch$branch <- gsub(" and "," & ", branch$branch)
-        branch$branch <- gsub(" or "," | ", branch$branch)
+        branch$branch <- gsub("\\[(.+)\\((\\d+)\\)\\]", "[\\1___\\2]", branch$branch)
+        branch$branch <- gsub("\\[event\\-name\\]", "[redcap_event_name]", branch$branch)
+        branch$branch <- gsub("\\[user\\-dag\\-name\\]", "[redcap_data_access_group]", branch$branch)
+        branch$branch <- gsub("\\[record\\-dag\\-name\\]", "[redcap_data_access_group]", branch$branch)
+        branch$branch <- gsub("=", "==", branch$branch)
+        branch$branch <- gsub("<>", "!=", branch$branch)
+        branch$branch <- gsub(" and ", " & ", branch$branch)
+        branch$branch <- gsub(" or ", " | ", branch$branch)
         branch$branch <- gsub(" ", "", branch$branch)
         branch$vars <- gsub("\\[(\\w+)\\]==.(\\w+).", "\\1",
                             gsub("\\[(\\w+)\\]==(\\w+)", "\\1",
@@ -157,46 +150,49 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
 
         # In case the branching logic presents multiple conditions, we create a data frame with every single condition
         for (i in 1:10) {
-          vars_branch <- data.frame(cbind(stringr::str_split_fixed(branch2$vars, "&", i),stringr::str_split_fixed(branch2$vars, "\\|", i)))
+          vars_branch <- data.frame(cbind(
+            stringr::str_split_fixed(branch2$vars, "&", i),
+            stringr::str_split_fixed(branch2$vars, "\\|", i)
+          ))
         }
-        vars_branch[,11] <- ifelse(vars_branch[,11]%in%vars_branch[,1], NA, vars_branch[,11])
+        vars_branch[,11] <- ifelse(vars_branch[, 11] %in% vars_branch[, 1], NA, vars_branch[, 11])
         vars_branch$var_ori <- branch2$var
         for (i in 1:20) {
-          vars_branch[,i] <- ifelse(stringr::str_detect(string = vars_branch[,i], pattern = "&"), NA, vars_branch[,i])
-          vars_branch[,i] <- ifelse(stringr::str_detect(string = vars_branch[,i], pattern = "\\|"), NA, vars_branch[,i])
-          vars_branch[,i][vars_branch[,i]%in%c("")] <- NA
-          vars_branch[,i] <- gsub(" ","",vars_branch[,i])
-          vars_branch[,i] <- gsub("\\[(\\w+)\\]==.(\\w+).", "\\1",vars_branch[,i])
+          vars_branch[,i] <- ifelse(stringr::str_detect(string = vars_branch[, i], pattern = "&"), NA, vars_branch[, i])
+          vars_branch[,i] <- ifelse(stringr::str_detect(string = vars_branch[, i], pattern = "\\|"), NA, vars_branch[, i])
+          vars_branch[,i][vars_branch[, i] %in% c("")] <- NA
+          vars_branch[,i] <- gsub(" ", "", vars_branch[, i])
+          vars_branch[,i] <- gsub("\\[(\\w+)\\]==.(\\w+).", "\\1", vars_branch[, i])
         }
-        cmd <- paste0("!vars_branch[,",1:(length(vars_branch)-1),"]", "%in%c(names(data),NA)")
-        cmd <- paste(cmd,collapse = "|")
-        cmd <- paste0("vars_branch$var_ori[",cmd,"]")
-        branch2 <- dplyr::filter(branch2, !branch2$var%in%eval(parse(text=cmd)))
-        branch2$branch <- gsub("\\[(\\w+)\\]","data$\\1",branch2$branch)
-        invalid <- dplyr::filter(branch2, branch2$var%in%eval(parse(text=cmd)))
+        cmd <- paste0("!vars_branch[,", 1:(length(vars_branch) - 1), "]", "%in%c(names(data),NA)")
+        cmd <- paste(cmd, collapse = "|")
+        cmd <- paste0("vars_branch$var_ori[", cmd, "]")
+        branch2 <- dplyr::filter(branch2, !branch2$var %in% eval(parse(text = cmd)))
+        branch2$branch <- gsub("\\[(\\w+)\\]", "data$\\1", branch2$branch)
+        invalid <- dplyr::filter(branch2, branch2$var %in% eval(parse(text = cmd)))
         var <- branch2$var
 
         # Construction of the data frame with the branching logic
         for (q in 1:nrow(branch2)) {
-          vars_dep <- c(stringr::str_split_fixed(branch2$vars[q], "&",10),stringr::str_split_fixed(branch2$vars[q], "\\|",10))
-          vars_dep[11] <- ifelse(vars_dep[11]%in%vars_dep[1], NA, vars_dep[11])
-          vars_dep <- dplyr::filter(vars_dep, vars_dep%in%c(vars_dep[!stringr::str_detect(vars_dep,"&")]))
-          vars_dep <- dplyr::filter(vars_dep, vars_dep%in%c(vars_dep[!stringr::str_detect(vars_dep,"\\|")]))
-          vars_dep <- dplyr::filter(vars_dep, vars_dep%in%c(vars_dep[!vars_dep%in%c(NA,"")]))
+          vars_dep <- c(stringr::str_split_fixed(branch2$vars[q], "&", 10),stringr::str_split_fixed(branch2$vars[q], "\\|", 10))
+          vars_dep[11] <- ifelse(vars_dep[11] %in% vars_dep[1], NA, vars_dep[11])
+          vars_dep <- dplyr::filter(vars_dep, vars_dep %in% c(vars_dep[!stringr::str_detect(vars_dep, "&")]))
+          vars_dep <- dplyr::filter(vars_dep, vars_dep %in% c(vars_dep[!stringr::str_detect(vars_dep, "\\|")]))
+          vars_dep <- dplyr::filter(vars_dep, vars_dep %in% c(vars_dep[!vars_dep %in% c(NA, "")]))
           vars_dep <- gsub(" ", "", vars_dep)
 
           branch2$branch[q] <- gsub(" ", "", branch2$branch[q])
 
           # If one of the variables in the branching logic is a factor, we change the condition to present the level of the factor
           for (z in 1:length(vars_dep)) {
-            if (any(class(data[,vars_dep[z]])=="factor")){
-              value_dep[z] <- (gsub(paste0(".*",vars_dep[z],"==.(\\w+).*"), "\\1",
-                                    gsub(paste0(".*",vars_dep[z],"==(\\w+)"), "\\1",branch2$branch[q])))
-              if (value_dep[z]%in%value_dep[stringr::str_detect(string = value_dep,pattern = "^\\d*$")]){
+            if (any(class(data[, vars_dep[z]]) == "factor")){
+              value_dep[z] <- (gsub(paste0(".*", vars_dep[z], "==.(\\w+).*"), "\\1",
+                                    gsub(paste0(".*", vars_dep[z], "==(\\w+)"), "\\1", branch2$branch[q])))
+              if (value_dep[z] %in% value_dep[stringr::str_detect(string = value_dep, pattern = "^\\d*$")]){
                 branch2$branch[q] <- gsub(paste0(vars_dep[z],"==(\\w+)"),
-                                          paste0(vars_dep[z],"=='",levels(data[,vars_dep[z]])[as.numeric(value_dep[z])+1],"'"),
-                                          gsub(paste0(vars_dep[z],"==.(\\w+)."),
-                                               paste0(vars_dep[z],"=='",levels(data[,vars_dep[z]])[as.numeric(value_dep[z])+1],"'"),
+                                          paste0(vars_dep[z], "=='", levels(data[, vars_dep[z]])[as.numeric(value_dep[z]) + 1], "'"),
+                                          gsub(paste0(vars_dep[z], "==.(\\w+)."),
+                                               paste0(vars_dep[z], "=='", levels(data[, vars_dep[z]])[as.numeric(value_dep[z]) + 1], "'"),
                                                branch2$branch[q]))
               }
             }
@@ -214,7 +210,7 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
         branch <- data.frame(matrix(ncol=3))
         names(branch) <- c("var", "label", "branch")
         for (i in 1:length(vars)) {
-          branch[i,] <- c(vars[i], gsub("<.*?>", "", dic$field_label[dic$field_name%in%gsub("___.*$","",vars[i])]), dic$branching_logic_show_field_only_if[dic$field_name%in%gsub("___.*$","",vars[i])])
+          branch[i,] <- c(vars[i], gsub("<.*?>", "", dic$field_label[dic$field_name %in% gsub("___.*$", "", vars[i])]), dic$branching_logic_show_field_only_if[dic$field_name %in% gsub("___.*$", "", vars[i])])
         }
       }
       rownames(branch) <- NULL
@@ -243,14 +239,14 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
       if (all(variables %in% NA)) {
         min <- dic[!dic$text_validation_min %in% NA & dic$text_validation_type_or_show_slider_number %in% c("number", "integer"), "field_name"]
         min <- min[min %in% names(data)]
-        max <- dic[!dic$text_validation_max %in%NA & dic$text_validation_type_or_show_slider_number %in% c("number", "integer"), "field_name"]
+        max <- dic[!dic$text_validation_max %in% NA & dic$text_validation_type_or_show_slider_number %in% c("number", "integer"), "field_name"]
         max <- max[max %in% names(data)]
         variables <- c(min, max)
       } else {
         # If there are variables specified, fetch minimum and maximum for those variables
         min <- dic[!dic$text_validation_min %in% NA & dic$text_validation_type_or_show_slider_number %in% c("number", "integer") & dic$field_name%in%variables, "field_name"]
         min <- min[min %in% names(data)]
-        max <- dic[!dic$text_validation_max %in%NA  & dic$text_validation_type_or_show_slider_number %in% c("number", "integer") & dic$field_name%in%variables, "field_name"]
+        max <- dic[!dic$text_validation_max %in%NA & dic$text_validation_type_or_show_slider_number %in% c("number", "integer") & dic$field_name%in%variables, "field_name"]
         max <- max[max %in% names(data)]
         variables <- c(min, max)
       }
@@ -332,8 +328,8 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
             "-"
           },
           Instrument = if (unique(instrument %in% NA)) {
-            if (gsub("___.*$","",variables[i]) %in% dic$field_name) {
-              gsub("_", " ", Hmisc::capitalize(dic[dic[, "field_name"] %in% gsub("___.*$","",variables[i]), "form_name"]))
+            if (gsub("___.*$", "", variables[i]) %in% dic$field_name) {
+              gsub("_", " ", Hmisc::capitalize(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"]))
             } else{
               "-"
             }
@@ -355,8 +351,8 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
             "-"
           },
           Description = if (unique(variables_names %in% NA)) {
-            if (gsub("___.*$","",variables[i]) %in% dic$field_name) {
-              dic[dic[, "field_name"] %in% gsub("___.*$","",variables[i]), "field_label"]
+            if (gsub("___.*$", "", variables[i]) %in% dic$field_name) {
+              dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "field_label"]
             } else{
               "-"
             }
@@ -394,8 +390,8 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
           },
           Variables = variables[i],
           Description = if (unique(variables_names %in% NA)) {
-            if (gsub("___.*$","",variables[i]) %in% dic$field_name) {
-              dic[dic[, "field_name"] %in% gsub("___.*$","",variables[i]), "field_label"]
+            if (gsub("___.*$", "", variables[i]) %in% dic$field_name) {
+              dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "field_label"]
             } else{
               "-"
             }
@@ -436,7 +432,8 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
     # Classify each query with it's own code
     if (nrow(queries) != 0) {
       if (any(stringr::str_detect(queries$Identifier, "-"))) {
-        queries <- queries %>% tidyr::separate("Identifier", c("center", "id"), sep = "([-])", remove = FALSE)
+        queries <- queries %>%
+                      tidyr::separate("Identifier", c("center", "id"), sep = "([-])", remove = FALSE)
         queries[, "center"] <- as.numeric(queries[, "center"])
         queries[, "id"] <- as.numeric(queries[, "id"])
         queries <- queries[order(queries[, "center"], queries[, "id"]), ]
@@ -446,16 +443,24 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
         queries$Identifier <- as.numeric(queries$Identifier)
         queries <- queries[order(queries$Identifier), ]
       }
-      queries <- unique(queries %>% dplyr::select(-"Code"))
-      queries <- data.frame(queries %>% dplyr::group_by(.data$Identifier) %>% dplyr::mutate(cod = 1:dplyr::n()))
+      queries <- unique(queries %>%
+                          dplyr::select(-"Code"))
+      queries <- data.frame(queries %>%
+                              dplyr::group_by(.data$Identifier) %>%
+                              dplyr::mutate(cod = 1:dplyr::n()))
       queries$Code <- paste0(as.character(queries$Identifier), "-", queries$cod)
       queries <- queries[, names(queries)[which(!names(queries) %in% c("cod"))]]
 
 
-      report <- data.frame("var" = queries$Field, "descr" = queries$Description, "query_descr" = gsub(" is .* it", "", queries$Query), "event" = queries$Event, "dag" = queries$DAG)
+      report <- data.frame("var" = queries$Field,
+                           "descr" = queries$Description,
+                           "query_descr" = gsub(" is .* it", "", queries$Query),
+                           "event" = queries$Event, "dag" = queries$DAG)
       if (all(addTo %in% NA & variables_names %in% NA)) {
-        report$var <- factor(report$var, levels = c(unique(variables)))
-        report$descr <- factor(report$descr, levels = c(unique(dic[dic[, "field_name"] %in% gsub("___.*$","",variables), "field_label"])))
+        report$var <- factor(report$var,
+                             levels = c(unique(variables)))
+        report$descr <- factor(report$descr,
+                               levels = c(unique(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables), "field_label"])))
         report$event <- factor(report$event,
                                levels = if (any(names(data) == "redcap_event_name.factor")) {
                                  unique(as.character(data[, "redcap_event_name.factor"]))
@@ -464,8 +469,10 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
                                })
       }
       if (all(addTo %in% NA & !is.na(variables_names))) {
-        report$var <- factor(report$var, levels = c(unique(variables)))
-        report$descr <- factor(report$descr, levels = c(unique(variables_names)))
+        report$var <- factor(report$var,
+                             levels = c(unique(variables)))
+        report$descr <- factor(report$descr,
+                               levels = c(unique(variables_names)))
         report$event <- factor(report$event,
                                levels = if (any(names(data) == "redcap_event_name.factor")) {
                                  unique(as.character(data[, "redcap_event_name.factor"]))
@@ -475,10 +482,14 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
       }
 
       if (report_zeros == FALSE) {
-        report <- report %>% dplyr::group_by(.data$var, .data$event, .data$query_descr, .data$dag, .drop = TRUE) %>% dplyr::summarise("total" = dplyr::n(), .groups = "keep")
+        report <- report %>%
+                    dplyr::group_by(.data$var, .data$event, .data$query_descr, .data$dag, .drop = TRUE) %>%
+                    dplyr::summarise("total" = dplyr::n(), .groups = "keep")
       }
       if (report_zeros == TRUE) {
-        report <- report %>% dplyr::group_by(.data$var, .data$event, .data$query_descr, .data$dag, .drop = FALSE) %>% dplyr::summarise("total" = dplyr::n(), .groups = "keep")
+        report <- report %>%
+                    dplyr::group_by(.data$var, .data$event, .data$query_descr, .data$dag, .drop = FALSE) %>%
+                    dplyr::summarise("total" = dplyr::n(), .groups = "keep")
 
       if (any(report$dag %in% NA & report$total %in% 0)) {
         zero_vars <- as.character(report$var[report$total == 0])
@@ -496,25 +507,31 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
           }
         }
         report <- merge(report, zero, by = c(names(zero)), all = T)
-        report <- report %>% dplyr::filter(!is.na(query_descr) & !is.na(dag))
+        report <- report %>%
+                    dplyr::filter(!is.na(.data$query_descr) & !is.na(.data$dag))
         }
       }
 
-      report <- data.frame(report$var, purrr::map_chr(gsub("___.*$","",report$var), function(x){
-        if(x %in% dic$field_name){
-          name <- gsub("<.*?>", "", dic$field_label[dic$field_name%in%x])
-          # Truncate description name if it exceeds 50 words
-          stringr::str_trunc(name, 50)
-        }else{
-          "-"
-        }
-      }), report$event, report$query_descr, report$total, report$dag)
-      report <- report[order(report[,"report.total"], decreasing = TRUE),]
+      report <- data.frame(report$var,
+                           purrr::map_chr(gsub("___.*$","",report$var), function(x){
+                             if(x %in% dic$field_name){
+                               name <- gsub("<.*?>", "", dic$field_label[dic$field_name %in% x])
+                               # Truncate description name if it exceeds 50 words
+                               stringr::str_trunc(name, 50)
+                               }else{
+                                 "-"
+                                 }}),
+                           report$event,
+                           report$query_descr,
+                           report$total,
+                           report$dag)
+      report <- report[order(report[, "report.total"], decreasing = TRUE), ]
       # Truncate variable name if it exceeds 26 characters
       report$report.var <- as.character(report$report.var)
       report$report.var <- stringr::str_trunc(report$report.var, 26)
 
       names(report) <- c("Variables", "Description", "Event", "Query", "Total", "DAG")
+      report[, "Query"] <- gsub("&", " & ", gsub("\\|", " \\| ", report[, "Query"]))
       rownames(report) <- NULL
 
       # Warning and Adding information about the variables with branching logic to the report
@@ -522,28 +539,59 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
         if (!all(filter%in%branch$`Branching logic`)) {
           warning("Some of the variables that were checked for missings present a branching logic. \nCheck the results tab of output for more details (...$results).", call. = FALSE)
           branch$Variable <- stringr::str_trunc(branch$Variable, 26)
-          report <- merge(report, branch %>% dplyr::select("Variable", "Branching logic"), by.x = "Variables", by.y = "Variable", all.x = TRUE)
+          report <- merge(report,
+                          branch %>%
+                            dplyr::select("Variable", "Branching logic"),
+                          by.x = "Variables", by.y = "Variable", all.x = TRUE)
           report$`Branching logic`[is.na(report$`Branching logic`)] <- "-"
-          report_dag <- merge(report, branch %>% dplyr::select("Variable", "Branching logic"), by.x = "Variables", by.y = "Variable", all.x = TRUE)
+          report_dag <- merge(report,
+                              branch %>%
+                                dplyr::select("Variable", "Branching logic"),
+                              by.x = "Variables", by.y = "Variable", all.x = TRUE)
           report_dag$`Branching logic`[is.na(report$`Branching logic`)] <- "-"
         }
       }
 
 
       if (by_dag %in% FALSE) {
-        report <- report %>% dplyr::select(-"DAG") %>% dplyr::group_by(.data$Variables, .data$Description, .data$Event, .data$Query, .drop = FALSE) %>% dplyr::summarise("Total" = sum(.data$Total), .groups = "keep")
-        report <- report[order(report$Total, decreasing = T),]
+        report <- report %>%
+                    dplyr::select(-"DAG") %>%
+                    dplyr::group_by(.data$Variables, .data$Description, .data$Event, .data$Query, .drop = FALSE) %>%
+                    dplyr::summarise("Total" = sum(.data$Total), .groups = "keep")
+        report <- report[order(report$Total, decreasing = T), ]
       if (all(report_title %in% NA)) {
-        result <- knitr::kable(report, "pipe", align = c("ccccc"), caption = "Report of queries")
-        viewer <- knitr::kable(report, align = c("ccccc"), row.names = FALSE, caption = "Report of queries", format = "html", longtable = TRUE)
-        viewer <- kableExtra::kable_styling(viewer, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
-        viewer <- kableExtra::row_spec(viewer, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+        result <- knitr::kable(report, "pipe",
+                               align = "ccccc",
+                               caption = "Report of queries")
+        viewer <- knitr::kable(report,
+                               align = "ccccc",
+                               row.names = FALSE,
+                               caption = "Report of queries",
+                               format = "html",
+                               longtable = TRUE)
+        viewer <- kableExtra::kable_styling(viewer,
+                                            bootstrap_options = c("striped", "condensed"),
+                                            full_width = FALSE)
+        viewer <- kableExtra::row_spec(viewer, 0,
+                                       italic = FALSE,
+                                       extra_css = "border-bottom: 1px solid grey")
       }
       if (all(!report_title %in% NA) & length(report_title) == 1) {
-        result <- knitr::kable(report, "pipe", align = c("ccccc"), caption = report_title)
-        viewer <- knitr::kable(report, align = c("ccccc"), row.names = FALSE, caption = report_title, format = "html", longtable = TRUE)
-        viewer <- kableExtra::kable_styling(viewer, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
-        viewer <- kableExtra::row_spec(viewer, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+        result <- knitr::kable(report, "pipe",
+                               align = "ccccc",
+                               caption = report_title)
+        viewer <- knitr::kable(report,
+                               align = c("ccccc"),
+                               row.names = FALSE,
+                               caption = report_title,
+                               format = "html",
+                               longtable = TRUE)
+        viewer <- kableExtra::kable_styling(viewer,
+                                            bootstrap_options = c("striped", "condensed"),
+                                            full_width = FALSE)
+        viewer <- kableExtra::row_spec(viewer, 0,
+                                       italic = FALSE,
+                                       extra_css = "border-bottom: 1px solid grey")
       }
       if (all(!report_title %in% NA) & length(report_title) > 1) {
         stop("There is more than one title for the report, please choose only one.", call. = FALSE)
@@ -556,22 +604,44 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
 
       if (by_dag %in% TRUE) {
         report_dag <- split(report, f = report$DAG)
-        report <- report %>% dplyr::select(-"DAG") %>% dplyr::group_by(.data$Variables, .data$Description, .data$Event, .data$Query, .drop = FALSE) %>% dplyr::summarise("Total" = sum(.data$Total), .groups = "keep")
-        report <- report[order(report$Total, decreasing = T),]
+        report <- report %>%
+                    dplyr::select(-"DAG") %>%
+                    dplyr::group_by(.data$Variables, .data$Description, .data$Event, .data$Query, .drop = FALSE) %>%
+                    dplyr::summarise("Total" = sum(.data$Total), .groups = "keep")
+        report <- report[order(report$Total, decreasing = T), ]
 
         if (all(report_title %in% NA)) {
           for (i in 1:length(report_dag)) {
-            report_dag[[i]] <- report_dag[[i]] %>% dplyr::select("DAG", "Variables", "Description", "Event", "Query", "Total")
-            report_dag[[i]] <- knitr::kable(report_dag[[i]], align = c("ccccc"), row.names = FALSE, caption = "Report of queries", format = "html", longtable = TRUE)
-            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]], bootstrap_options = c("striped", "condensed"), full_width = FALSE)
-            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+            report_dag[[i]] <- report_dag[[i]] %>%
+                                  dplyr::select("DAG", "Variables", "Description", "Event", "Query", "Total")
+            report_dag[[i]] <- knitr::kable(report_dag[[i]],
+                                            align = "ccccc",
+                                            row.names = FALSE,
+                                            caption = "Report of queries",
+                                            format = "html",
+                                            longtable = TRUE)
+            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]],
+                                                         bootstrap_options = c("striped", "condensed"),
+                                                         full_width = FALSE)
+            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0,
+                                                    italic = FALSE,
+                                                    extra_css = "border-bottom: 1px solid grey")
           }
         }
         if (all(!report_title %in% NA) & length(report_title) == 1) {
           for (i in 1:length(report_dag)) {
-            report_dag[[i]] <- knitr::kable(report_dag[[i]], align = c("ccccc"), row.names = FALSE, caption = report_title, format = "html", longtable = TRUE)
-            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]], bootstrap_options = c("striped", "condensed"), full_width = FALSE)
-            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+            report_dag[[i]] <- knitr::kable(report_dag[[i]],
+                                            align = c("ccccc"),
+                                            row.names = FALSE,
+                                            caption = report_title,
+                                            format = "html",
+                                            longtable = TRUE)
+            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]],
+                                                         bootstrap_options = c("striped", "condensed"),
+                                                         full_width = FALSE)
+            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0,
+                                                    italic = FALSE,
+                                                    extra_css = "border-bottom: 1px solid grey")
           }
         }
         if (all(!report_title %in% NA) & length(report_title) > 1) {
@@ -592,7 +662,8 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
       excel <- lapply(excel, function(x) {length(x) <- max_length; x})
       no_queries <- data.frame(excel)
 
-      no_queries <- no_queries %>% tidyr::fill(.data$Event, .data$Variables, .data$Description, .data$Query, .direction = "down")
+      no_queries <- no_queries %>%
+                      tidyr::fill(.data$Event, .data$Variables, .data$Description, .data$Query, .direction = "down")
       no_queries$Description <- stringr::str_trunc(no_queries$Description, 50)
       no_queries$Variables <- stringr::str_trunc(no_queries$Variables, 26)
 
@@ -605,24 +676,53 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
         if (!all(filter%in%branch$`Branching logic`)) {
           warning("Some of the variables that were checked for missings present a branching logic. \nCheck the results tab of output for more details (...$results).", call. = FALSE)
           branch$Variable <- stringr::str_trunc(branch$Variable, 26)
-          report <- merge(report, branch %>% dplyr::select("Variable", "Branching logic"), by.x = "Variables", by.y = "Variable", all.x = TRUE)
+          report <- merge(report,
+                          branch %>%
+                            dplyr::select("Variable", "Branching logic"),
+                          by.x = "Variables", by.y = "Variable", all.x = TRUE)
           report$`Branching logic`[is.na(report$`Branching logic`)] <- "-"
         }
       }
 
       if (by_dag %in% FALSE) {
-        report <- report %>% dplyr::select(-"DAG") %>% dplyr::distinct(.keep_all = T)
+        report <- report %>%
+                      dplyr::select(-"DAG") %>%
+                      dplyr::distinct(.keep_all = T)
         if (all(report_title %in% NA)) {
-          result <- knitr::kable(report, "pipe", align = c("ccccc"), caption = "Report of queries")
-          viewer <- knitr::kable(report, align = c("ccccc"), row.names = FALSE, caption = "Report of queries", format = "html", longtable = TRUE)
-          viewer <- kableExtra::kable_styling(viewer, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
-          viewer <- kableExtra::row_spec(viewer, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+          result <- knitr::kable(report,
+                                 "pipe",
+                                 align = "ccccc",
+                                 caption = "Report of queries")
+          viewer <- knitr::kable(report,
+                                 align = c("ccccc"),
+                                 row.names = FALSE,
+                                 caption = "Report of queries",
+                                 format = "html",
+                                 longtable = TRUE)
+          viewer <- kableExtra::kable_styling(viewer,
+                                              bootstrap_options = c("striped", "condensed"),
+                                              full_width = FALSE)
+          viewer <- kableExtra::row_spec(viewer, 0,
+                                         italic = FALSE,
+                                         extra_css = "border-bottom: 1px solid grey")
         }
         if (all(!report_title %in% NA) & length(report_title) == 1) {
-          result <- knitr::kable(report, "pipe", align = c("ccccc"), caption = report_title)
-          viewer <- knitr::kable(report, align = c("ccccc"), row.names = FALSE, caption = report_title, format = "html", longtable = TRUE)
-          viewer <- kableExtra::kable_styling(viewer, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
-          viewer <- kableExtra::row_spec(viewer, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+          result <- knitr::kable(report,
+                                 "pipe",
+                                 align = "ccccc",
+                                 caption = report_title)
+          viewer <- knitr::kable(report,
+                                 align = "ccccc",
+                                 row.names = FALSE,
+                                 caption = report_title,
+                                 format = "html",
+                                 longtable = TRUE)
+          viewer <- kableExtra::kable_styling(viewer,
+                                              bootstrap_options = c("striped", "condensed"),
+                                              full_width = FALSE)
+          viewer <- kableExtra::row_spec(viewer, 0,
+                                         italic = FALSE,
+                                         extra_css = "border-bottom: 1px solid grey")
         }
         def <- list(queries = queries,
                     results = viewer)
@@ -630,20 +730,41 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
 
       if (by_dag %in% TRUE) {
         report_dag <- split(report, f = report$DAG)
-        report <- report %>% dplyr::select(-"DAG") %>% dplyr::distinct(.keep_all = T)
+        report <- report %>%
+                    dplyr::select(-"DAG") %>%
+                    dplyr::distinct(.keep_all = T)
         if (all(report_title %in% NA)) {
           for (i in 1:length(report_dag)) {
-            report_dag[[i]] <- report_dag[[i]] %>% dplyr::select("DAG", "Variables", "Description", "Event", "Query", "Total")
-            report_dag[[i]] <- knitr::kable(report_dag[[i]], align = c("ccccc"), row.names = FALSE, caption = "Report of queries", format = "html", longtable = TRUE)
-            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]], bootstrap_options = c("striped", "condensed"), full_width = FALSE)
-            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+            report_dag[[i]] <- report_dag[[i]] %>%
+                                  dplyr::select("DAG", "Variables", "Description", "Event", "Query", "Total")
+            report_dag[[i]] <- knitr::kable(report_dag[[i]],
+                                            align = "ccccc",
+                                            row.names = FALSE,
+                                            caption = "Report of queries",
+                                            format = "html",
+                                            longtable = TRUE)
+            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]],
+                                                         bootstrap_options = c("striped", "condensed"),
+                                                         full_width = FALSE)
+            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0,
+                                                    italic = FALSE,
+                                                    extra_css = "border-bottom: 1px solid grey")
           }
         }
         if (all(!report_title %in% NA) & length(report_title) == 1) {
           for (i in 1:length(report_dag)) {
-            report_dag[[i]] <- knitr::kable(report_dag[[i]], align = c("ccccc"), row.names = FALSE, caption = report_title, format = "html", longtable = TRUE)
-            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]], bootstrap_options = c("striped", "condensed"), full_width = FALSE)
-            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+            report_dag[[i]] <- knitr::kable(report_dag[[i]],
+                                            align = "ccccc",
+                                            row.names = FALSE,
+                                            caption = report_title,
+                                            format = "html",
+                                            longtable = TRUE)
+            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]],
+                                                         bootstrap_options = c("striped", "condensed"),
+                                                         full_width = FALSE)
+            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0,
+                                                    italic = FALSE,
+                                                    extra_css = "border-bottom: 1px solid grey")
           }
         }
         def <- list(queries = queries,
@@ -656,7 +777,6 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
 
     }
     # Return the final product
-    # print(viewer, type = "viewer")
     def
   }
 

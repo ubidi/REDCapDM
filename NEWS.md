@@ -1,3 +1,21 @@
+# compareGroups 0.3-0
+
+2023-02-24
+
+## Changes to functions
+
+- The _redcap_data()_ function, when used to read data through an API connection, will automatically read the event-form mapping without specifying the _event_path_ argument. This will only be applied on longitudinal REDCap projects (more than one event).
+- Adaption of the _rd_transform()_ function to non-longitudinal REDCap projects which only contain one event.
+- The _rd_transform()_ function will now also delete, by default, variables with the pattern "_timestamp" in addition to the "_complete" pattern.
+- Change in the names of the categories of the different queries when comparing two reports using the _check_queries()_.
+- Creation of a new category of query in the _check_queries()_ output ("Miscorrected") that represents those queries that are different but belong to the same variable of the same record identifier in both the old and new reports.
+- Adaptation of the summary of the _check_queries()_ and _rd_event()_ functions to the RStudio viewer tab.
+- Customization of the title of the summary of queries returned by the _check_queries()_ function.
+
+## Bug fixes
+
+- Issue resolved in the _redcap_data()_ function when trying to read the dictionary of a specific structure of a REDCap project.
+
 # compareGroups 0.2-0
 
 2023-02-17

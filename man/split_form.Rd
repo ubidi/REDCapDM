@@ -4,7 +4,7 @@
 \alias{split_form}
 \title{Creation of a data frame with variables of a specified form}
 \usage{
-split_form(data, dic, event_form, which = NULL, wide = FALSE)
+split_form(data, dic, event_form = NULL, which = NULL, wide = FALSE)
 }
 \arguments{
 \item{data}{Data frame containing data from REDCap.}

@@ -17,14 +17,11 @@
 #' example <- rd_event(covican,
 #'                     event = "follow_up_visit_da_arm_1")
 #' example
+#' @importFrom rlang .data
 #' @export
 
 rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_name = NA, addTo = NA, report_title = NA, report_zeros = FALSE)
   {
-    Code <- NULL
-    Identifier <- NULL
-    var <- NULL
-
     # If the entire list resulting from the 'redcap_data' function is used
     project <- c(...)
     if(!is.null(project)){
@@ -160,7 +157,7 @@ rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_nam
         queries <- queries[order(queries$Identifier), ]
       }
       queries <- unique(queries %>% dplyr::select(-"Code"))
-      queries <- data.frame(queries %>% dplyr::group_by(Identifier) %>% dplyr::mutate(cod = 1:dplyr::n()))
+      queries <- data.frame(queries %>% dplyr::group_by(.data$Identifier) %>% dplyr::mutate(cod = 1:dplyr::n()))
       queries$Code <- paste0(as.character(queries$Identifier), "-", queries$cod)
       queries <- queries[, names(queries)[which(!names(queries) %in% c("cod"))]]
 
@@ -171,20 +168,24 @@ rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_nam
         report$descr <- factor(report$descr)
       }
       if (report_zeros == FALSE) {
-        report <- report %>% dplyr::group_by(var, .drop = TRUE) %>% dplyr::summarise("total" = dplyr::n())
+        report <- report %>% dplyr::group_by(.data$var, .drop = TRUE) %>% dplyr::summarise("total" = dplyr::n())
       }
       if (report_zeros == TRUE) {
-        report <- report %>% dplyr::group_by(var, .drop = FALSE) %>% dplyr::summarise("total" = dplyr::n())
+        report <- report %>% dplyr::group_by(.data$var, .drop = FALSE) %>% dplyr::summarise("total" = dplyr::n())
       }
       report <- data.frame(report$var, unique(data0$redcap_event_name.factor[data0$redcap_event_name %in% report$var]), report$total)
       report <- report[order(report[,3], decreasing = TRUE),]
       names(report) <- c("Events", "Description", "Total")
       rownames(report) <- NULL
       if (all(report_title %in% NA)) {
-        result <- knitr::kable(report, "pipe", align = c("ccc"), caption = "Report of queries")
+        result <- knitr::kable(report, align = c("ccccc"), row.names = FALSE, caption = "Report of queries", format = "html", longtable = TRUE)
+        result <- kableExtra::kable_styling(result, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
+        result <- kableExtra::row_spec(result, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
       }
       if (all(!report_title %in% NA) & length(report_title) == 1) {
-        result <- knitr::kable(report, "pipe", align = c("ccc"), caption = report_title)
+        result <- knitr::kable(report, align = c("ccccc"), row.names = FALSE, caption = report_title, format = "html", longtable = TRUE)
+        result <- kableExtra::kable_styling(result, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
+        result <- kableExtra::row_spec(result, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
       }
       if (all(!report_title %in% NA) & length(report_title) > 1) {
         stop("There is more than one title for the report, please choose only one.", call. = FALSE)
@@ -201,19 +202,23 @@ rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_nam
           report$descr <- factor(report$descr)
         }
         if(report_zeros == TRUE) {
-          report <- report %>% dplyr::group_by(var, .drop = FALSE) %>% dplyr::summarise("total" = dplyr::n())
+          report <- report %>% dplyr::group_by(.data$var, .drop = FALSE) %>% dplyr::summarise("total" = dplyr::n())
         } else {
-          report <- report %>% dplyr::group_by(var, .drop = TRUE) %>% dplyr::summarise("total" = dplyr::n())
+          report <- report %>% dplyr::group_by(.data$var, .drop = TRUE) %>% dplyr::summarise("total" = dplyr::n())
         }
         report <- data.frame(report$var, unique(data0$redcap_event_name.factor[data0$redcap_event_name %in% report$var]), report$total)
         report <- report[order(report[,3], decreasing = TRUE),]
         names(report) <- c("Events", "Description", "Total")
         rownames(report) <- NULL
         if (all(report_title %in% NA)) {
-          result <- knitr::kable(report, "pipe", align = c("ccc"), caption = "Report of queries")
+          result <- knitr::kable(report, align = c("ccccc"), row.names = FALSE, caption = "Report of queries", format = "html", longtable = TRUE)
+          result <- kableExtra::kable_styling(result, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
+          result <- kableExtra::row_spec(result, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
         }
         if (all(!report_title %in% NA) & length(report_title) == 1) {
-          result <- knitr::kable(report, "pipe", align = c("ccc"), caption = report_title)
+          result <- knitr::kable(report, align = c("ccccc"), row.names = FALSE, caption = report_title, format = "html", longtable = TRUE)
+          result <- kableExtra::kable_styling(result, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
+          result <- kableExtra::row_spec(result, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
         }
         if (all(!report_title %in% NA) & length(report_title) > 1) {
           stop("There is more than one title for the report, please choose only one.", call. = FALSE)

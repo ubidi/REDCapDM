@@ -43,7 +43,10 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
     stop("No data/dictionary was provided")
   }
 
-  if(is.null(event_form) & length(unique(data$redcap_event_name)) > 1){
+  #Check if the project is longitudinal (has more than one event) or not:
+  longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
+
+  if(is.null(event_form) & longitudinal){
     stop("There is more than one event in the data and the event-form correspondence hasn't been specified")
   }
 
@@ -73,11 +76,20 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
   rlogic_var <- unlist(stringr::str_extract_all(rlogic, "\\[[\\w,\\-]+\\]"))
 
   #Check if each variable is present in the data or it's one of the events
-  check_lgl <- purrr::map_lgl(rlogic_var,function(x){
-    out <- gsub("^\\[","",x)
-    out <- gsub("\\]$","",out)
-    out%in%names(data) | out%in%data$redcap_event_name
-  })
+  if(longitudinal){
+    check_lgl <- purrr::map_lgl(rlogic_var,function(x){
+      out <- gsub("^\\[","",x)
+      out <- gsub("\\]$","",out)
+      out%in%names(data) | out%in%data$redcap_event_name
+    })
+  }else{
+    check_lgl <- purrr::map_lgl(rlogic_var,function(x){
+      out <- gsub("^\\[","",x)
+      out <- gsub("\\]$","",out)
+      out%in%names(data)
+    })
+  }
+
 
   #If there are some that are not in the dataframe it will give an error
 
