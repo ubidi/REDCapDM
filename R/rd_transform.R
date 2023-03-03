@@ -42,7 +42,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, event_
     }
 
     data <- project$data
-    dic <- project$dic
+    dic <- project$dictionary
 
     if("event_form" %in% names(project)){
       if(!is.null(event_form)){

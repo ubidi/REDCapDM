@@ -11,15 +11,16 @@ rd_query(
   variables = NA,
   expression = NA,
   negate = FALSE,
-  variables_names = NA,
-  query_name = NA,
-  instrument = NA,
   event = NA,
   filter = NA,
   addTo = NA,
+  variables_names = NA,
+  query_name = NA,
+  instrument = NA,
   report_title = NA,
   report_zeros = FALSE,
-  by_dag = FALSE
+  by_dag = FALSE,
+  link = list()
 )
 }
 \arguments{
@@ -35,23 +36,25 @@ rd_query(
 
 \item{negate}{Logical value indicating whether or not to negate the defined expression. Defaults to `FALSE`.}
 
-\item{variables_names}{Vector with the description of each variable. By default, the function will automatically pick the description of each variable from the dictionary of the dataset.}
-
-\item{query_name}{Description of the query. It can be defined as the same one for all variables or you can define one for each variable. By default, the function will define the description as `The value is [value] and it should not be [expression]' for each one of the variables`.}
-
-\item{instrument}{REDCap's instrument to which the variables belong. It can be defined as the same one for all variables or you can define one for each variable. By default, the function will automatically pick the corresponding instrument of each variable from the dictionary of the dataset.}
-
 \item{event}{REDCap's event name to be analyzed. If your REDCap project has events, you should use this argument in order to name the event to which the defined variables belong.}
 
 \item{filter}{A filter to apply to the dataset. This argument can be used to, for example, apply the branching logic of a determined variable.}
 
 \item{addTo}{Data frame corresponding to a prior report of queries to which you can add the new data frame of queries. By default, the function will always generate a new data frame without taking into account former reports.}
 
+\item{variables_names}{Vector with the description of each variable. By default, the function will automatically pick the description of each variable from the dictionary of the dataset.}
+
+\item{query_name}{Description of the query. It can be defined as the same one for all variables or you can define one for each variable. By default, the function will define the description as `The value is [value] and it should not be [expression]' for each one of the variables`.}
+
+\item{instrument}{REDCap's instrument to which the variables belong. It can be defined as the same one for all variables or you can define one for each variable. By default, the function will automatically pick the corresponding instrument of each variable from the dictionary of the dataset.}
+
 \item{report_title}{Character string with the report's title.}
 
 \item{report_zeros}{Logical. If `TRUE`, it returns a report including variables with zero queries.}
 
 \item{by_dag}{Logical. If `TRUE`, both elements of the output will be grouped by the data access groups (DAGs) of the REDCap project.}
+
+\item{link}{List containing project information used to create a web link to each query.}
 }
 \value{
 A list with a data frame with 9 columns meant to help the user identify each query and a table with the total of queries per variable.

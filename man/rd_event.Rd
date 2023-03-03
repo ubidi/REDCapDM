@@ -13,7 +13,8 @@ rd_event(
   query_name = NA,
   addTo = NA,
   report_title = NA,
-  report_zeros = FALSE
+  report_zeros = FALSE,
+  link = list()
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ rd_event(
 \item{report_title}{Character string with the report's title.}
 
 \item{report_zeros}{Logical. If `TRUE`, it returns a report including events with zero queries.}
+
+\item{link}{List containing project information used to create a web link to each query.}
 }
 \value{
 A dataframe with 9 columns meant to help the user identify each missing event and a table with the total of queries per variable.

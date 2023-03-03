@@ -18,6 +18,7 @@
 #' @param report_title Character string with the report's title.
 #' @param report_zeros Logical. If `TRUE`, it returns a report including variables with zero queries.
 #' @param by_dag Logical. If `TRUE`, both elements of the output will be grouped by the data access groups (DAGs) of the REDCap project.
+#' @param link List containing project information used to create a web link to each query.
 #' @return A list with a data frame with 9 columns meant to help the user identify each query and a table with the total of queries per variable.
 #' @examples
 #' # Missings
@@ -44,7 +45,7 @@
 #' @importFrom rlang .data
 #' @export
 
-rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = NA, negate = FALSE, variables_names = NA, query_name = NA, instrument = NA, event = NA, filter = NA, addTo = NA, report_title = NA, report_zeros = FALSE, by_dag = FALSE)
+rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = NA, negate = FALSE, event = NA, filter = NA, addTo = NA, variables_names = NA, query_name = NA, instrument = NA, report_title = NA, report_zeros = FALSE, by_dag = FALSE, link = list())
   {
     old_options <- options()
     on.exit(options(old_options))
@@ -59,15 +60,15 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
         warning("Dictionary has been specified twice so the function will not use the information in the dic argument.")
       }
       data <- project$data
-      dic <- project$dic
+      dic <- project$dictionary
     }
 
     # Making sure that the object data is a data.frame
     data <- as.data.frame(data)
 
     # Creation of the structure of the queries
-    queries <- as.data.frame(matrix(ncol = 9, nrow = 0))
-    colnames(queries) <- c("Identifier", "DAG", "Event", "Instrument", "Field", "Repetition", "Description", "Query", "Code")
+    queries <- as.data.frame(matrix(ncol = 10, nrow = 0))
+    colnames(queries) <- c("Identifier", "DAG", "Event", "Instrument", "Field", "Repetition", "Description", "Query", "Code", "Link")
 
     # Naming the first column of the REDCap's database as record_id
     if (all(!names(data) == "record_id")) {
@@ -101,6 +102,44 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
       }
     }
 
+    # Adding the information from the link argument to the data
+    if (!is.null(link[["event_id"]])) {
+      if (any(names(data) == "redcap_event_name")) {
+        if (all(event %in% names(link[["event_id"]])) & all(event %in% data[, "redcap_event_name"])) {
+          event_link <- data.frame("name" = names(link[["event_id"]]),
+                                   "event_id" = as.numeric(link[["event_id"]]))
+          data <- merge(data, event_link, by.x = "redcap_event_name", by.y = "name")
+        }
+        if (all(event %in% names(link[["event_id"]])) & all(event %in% data[, "redcap_event_name.factor"])) {
+          event_link <- data.frame("name" = names(link[["event_id"]]),
+                                   "event_id" = as.numeric(link[["event_id"]]))
+          data <- merge(data, event_link, by.x = "redcap_event_name.factor", by.y = "name")
+        }
+        if (all(is.na(event) & all(names(data[, "redcap_event_name"] %in% names(link[["event_id"]]))))) {
+          event_link <- data.frame("name" = names(link[["event_id"]]),
+                                   "event_id" = as.numeric(link[["event_id"]]))
+          data <- merge(data, event_link, by.x = "redcap_event_name", by.y = "name")
+        }
+        if (all(is.na(event) & all(names(data[, "redcap_event_name.factor"] %in% names(link[["event_id"]]))))) {
+          event_link <- data.frame("name" = names(link[["event_id"]]),
+                                   "event_id" = as.numeric(link[["event_id"]]))
+          data <- merge(data, event_link, by.x = "redcap_event_name.factor", by.y = "name")
+        }
+      } else {
+        if (length(link[["event_id"]]) == 1) {
+          data[, "event_id"] <- as.numeric(link[["event_id"]])
+        } else {
+          stop("The project is non-longitudinal (has no events). Therefore, you only need to specify an event ID.")
+        }
+      }
+    }
+
+    # Warning: If the link argument is not fully completed
+    if (!is.null(names(link))) {
+      if (!all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link))) {
+        stop("There is not enough information in the link argument. \nTo create the link correctly, please provide the domain, redcap version, project ID and event ID.", call. = F)
+      }
+    }
 
     # Filtering the data using the information of the argument 'filter'
     if (all(!filter %in% NA)) {
@@ -233,31 +272,6 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
       warning("There are more variables than expressions, so the same expression was applied to all variables", call. = FALSE)
     }
 
-    # Since the argument 'expression' is unspecified, the minimum and maximum of each variable are considered as the expression to check
-    if (all(expression %in% NA)) {
-      # If there are no variables specified, check the dictionary for all of those who have minimum and maximum
-      if (all(variables %in% NA)) {
-        min <- dic[!dic$text_validation_min %in% NA & dic$text_validation_type_or_show_slider_number %in% c("number", "integer"), "field_name"]
-        min <- min[min %in% names(data)]
-        max <- dic[!dic$text_validation_max %in% NA & dic$text_validation_type_or_show_slider_number %in% c("number", "integer"), "field_name"]
-        max <- max[max %in% names(data)]
-        variables <- c(min, max)
-      } else {
-        # If there are variables specified, fetch minimum and maximum for those variables
-        min <- dic[!dic$text_validation_min %in% NA & dic$text_validation_type_or_show_slider_number %in% c("number", "integer") & dic$field_name%in%variables, "field_name"]
-        min <- min[min %in% names(data)]
-        max <- dic[!dic$text_validation_max %in%NA & dic$text_validation_type_or_show_slider_number %in% c("number", "integer") & dic$field_name%in%variables, "field_name"]
-        max <- max[max %in% names(data)]
-        variables <- c(min, max)
-      }
-      for (q in 1:length(min)) {
-        expression[q] <- paste0("<", dic[dic$field_name %in% variables[q], "text_validation_min"])
-      }
-      for (q in length(min):length(variables)) {
-        expression[q] <- paste0(">", dic[dic$field_name %in% variables[q], "text_validation_max"])
-      }
-    }
-
     # We make sure the order of the variables chosen remains the same as the original
     if (any(variables[stringr::str_detect(string = gsub(" ", "", expression), pattern = c("%in%NA"))] %in% dic[!dic$branching_logic_show_field_only_if%in%c(NA,""),"field_name"])) {
       if (all(variables != vars)) {
@@ -307,16 +321,19 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
       # Identification of queries, using the structure built before
       if (nrow(definitive) > 0) {
         x <- definitive[, c("record_id", names(definitive)[stringr::str_detect(names(definitive), "redcap")], variables[i])]
+        if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link))) {
+          x[, "event_id"] <- definitive[, "event_id"]
+        }
         excel <- data.frame(
           Identifier = x[, "record_id"],
           DAG = if (any(utils::head(names(x)) == "redcap_data_access_group")) {
             if (any(names(x) == "redcap_data_access_group.factor")) {
               as.character(x[, "redcap_data_access_group.factor"])
             } else {
-              as.character(x[, "redcap_data_access_group"])
+              ifelse(as.character(x[, "redcap_data_access_group"]) == NA,
+                     NA,
+                     as.character(x[, "redcap_data_access_group"]))
             }
-          } else {
-            "-"
           },
           Event = if (any(utils::head(names(x)) == "redcap_event_name")) {
             if (any(names(x) == "redcap_event_name.factor")) {
@@ -375,6 +392,9 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
           Code = "",
           stringsAsFactors = FALSE
         )
+        if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link))) {
+          excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&event_id=", x[i, "event_id"], "&page=", gsub("_", " ", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"]), "&id=", x[, "record_id"])
+        }
         queries <- rbind(queries, excel)
       } else {
         # If there are no queries to be identified, we still need this information to build the report
@@ -426,7 +446,9 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
 
     # If the argument 'addTo' is specified, combine the queries generated with another ones
     if (all(!addTo %in% NA)) {
-      queries <- rbind(queries, addTo$queries)
+      col_names <- names(queries)
+      queries <- merge(queries, addTo$queries, by = names(addTo$queries)[names(addTo$queries) %in% names(queries)], all = TRUE)
+      queries <- queries %>% dplyr::select(col_names)
     }
 
     # Classify each query with it's own code
@@ -450,7 +472,9 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
                               dplyr::mutate(cod = 1:dplyr::n()))
       queries$Code <- paste0(as.character(queries$Identifier), "-", queries$cod)
       queries <- queries[, names(queries)[which(!names(queries) %in% c("cod"))]]
-
+      if (any(names(queries) == "Link")) {
+        queries <- queries %>% dplyr::select("Identifier":"Query", "Code", "Link")
+      }
 
       report <- data.frame("var" = queries$Field,
                            "descr" = queries$Description,
@@ -461,12 +485,14 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
                              levels = c(unique(variables)))
         report$descr <- factor(report$descr,
                                levels = c(unique(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables), "field_label"])))
-        report$event <- factor(report$event,
-                               levels = if (any(names(data) == "redcap_event_name.factor")) {
-                                 unique(as.character(data[, "redcap_event_name.factor"]))
-                               } else {
-                                 unique(as.character(data[, "redcap_event_name"]))
-                               })
+        if (any(names(data) == "redcap_event_name")) {
+          report$event <- factor(report$event,
+                                 levels = if (any(names(data) == "redcap_event_name.factor")) {
+                                   unique(as.character(data[, "redcap_event_name.factor"]))
+                                 } else {
+                                   unique(as.character(data[, "redcap_event_name"]))
+                                 })
+        }
       }
       if (all(addTo %in% NA & !is.na(variables_names))) {
         report$var <- factor(report$var,

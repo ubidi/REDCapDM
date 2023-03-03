@@ -29,7 +29,7 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
     }
 
     data <- project$data
-    dic <- project$dic
+    dic <- project$dictionary
 
     if("event_form" %in% names(project)){
       if(!is.null(event_form)){
@@ -105,11 +105,11 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
 
 
     #Change the redcap functions into r functions
-    rlogic <- gsub("if\\(", "ifelse(", rlogic)
+    rlogic <- gsub("if\\s?\\(", "ifelse(", rlogic)
     rlogic <- gsub("rounddown(.*),0\\)", "floor\\1)", rlogic)
+    rlogic <- gsub("rounddown(.*)\\)", "floor\\1)", rlogic)
     rlogic <- gsub("datediff\\s?", "lubridate::time_length(lubridate::interval", rlogic)
     rlogic <- gsub("sum\\(","rowSums(cbind(", rlogic)
-    rlogic <- gsub("'today'", "Sys.Date()", rlogic)
     #Change dates (there can be dates specified in the logic) to date format
     if(grepl("'dmy'", rlogic)){
       rlogic <- gsub("'(\\d\\d-\\d\\d-\\d\\d\\d\\d)'", "lubridate::dmy('\\1')", rlogic)

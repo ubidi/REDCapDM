@@ -1,4 +1,16 @@
-# compareGroups 0.3-0
+# REDCapDM 0.4-0
+
+2023-03-03
+
+## Changes to functions
+
+- New _link_ argument of the functions _rd_query()_ and _rd_event()_ to generate the link where the query can be found in REDCap. [Solves Issue #2 in github]
+
+## Bug fixes
+
+- Bug resolved in the summary of queries, when the data did not present events (non-longitudinal projects).
+
+# REDCapDM 0.3-0
 
 2023-02-24
 
@@ -14,9 +26,9 @@
 
 ## Bug fixes
 
-- Issue resolved in the _redcap_data()_ function when trying to read the dictionary of a specific structure of a REDCap project.
+- Bug resolved in the _redcap_data()_ function when trying to read the dictionary of a specific structure of a REDCap project.
 
-# compareGroups 0.2-0
+# REDCapDM 0.2-0
 
 2023-02-17
 
@@ -35,7 +47,7 @@
 - The output of the _redcap_data()_ function was not consistent if we read the data using the files exported from REDCap or the API connection. [Solves Issue #1 in github]
 - We changed the use of the _subset()_ function by the _filter()_ function because of undesired behaviours of this function when applying a non-existent expression.
 
-# compareGroups 0.1-1
+# REDCapDM 0.1-1
 
 2023-01-30
 

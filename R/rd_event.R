@@ -13,6 +13,7 @@
 #' @param report_title Character string with the report's title.
 #' @param report_zeros Logical. If `TRUE`, it returns a report including events with zero queries.
 #' @return A dataframe with 9 columns meant to help the user identify each missing event and a table with the total of queries per variable.
+#' @param link List containing project information used to create a web link to each query.
 #' @examples
 #' example <- rd_event(covican,
 #'                     event = "follow_up_visit_da_arm_1")
@@ -20,7 +21,7 @@
 #' @importFrom rlang .data
 #' @export
 
-rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_name = NA, addTo = NA, report_title = NA, report_zeros = FALSE)
+rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_name = NA, addTo = NA, report_title = NA, report_zeros = FALSE, link = list())
   {
     # If the entire list resulting from the 'redcap_data' function is used
     project <- c(...)
@@ -32,7 +33,7 @@ rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_nam
         warning("Dictionary has been specified twice so the function will not use the information in the dic argument.")
       }
       data <- project$data
-      dic <- project$dic
+      dic <- project$dictionary
     }
 
     # Making sure that the object data is a data.frame
@@ -133,6 +134,9 @@ rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_nam
             Code = "",
             stringsAsFactors = FALSE
           )
+          if (all(c("domain", "redcap_version", "proj_id") %in% names(link))) {
+            excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/record_home.php?pid=", link[["proj_id"]], "&id=", x[, "record_id"])
+          }
           queries <- rbind(queries, excel)
         }
       }
@@ -140,7 +144,9 @@ rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_nam
 
     # If the argument 'addTo' is specified, combine the queries generated with another ones
     if (all(!addTo %in% NA)) {
-      queries <- rbind(queries, addTo)
+      col_names <- names(queries)
+      queries <- merge(queries, addTo$queries, by = names(addTo$queries)[names(addTo$queries) %in% names(queries)], all = TRUE)
+      queries <- queries %>% dplyr::select(col_names)
     }
 
     # Classify each query with it's own code
@@ -160,6 +166,9 @@ rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_nam
       queries <- data.frame(queries %>% dplyr::group_by(.data$Identifier) %>% dplyr::mutate(cod = 1:dplyr::n()))
       queries$Code <- paste0(as.character(queries$Identifier), "-", queries$cod)
       queries <- queries[, names(queries)[which(!names(queries) %in% c("cod"))]]
+      if (any(names(queries) == "Link")) {
+        queries <- queries %>% dplyr::select("Identifier":"Query", "Code", "Link")
+      }
 
       # Creation of the report indicating the variables checked and the total of queries generated for each one
       report <- data.frame("var" = queries$Event, "descr" = queries$Description)
